@@ -1,7 +1,7 @@
 # Predicting Delivery time for Online Food Orders
 Authors: Steven Mou, Owen Lin, Rachel Lee, Shravan Chandra
 
-We wanted to know how delivery time for online food orders are affected based on the order itself, but also whether external factors can change based on the delivery environment.
+How accurately can food delivery time be predicted using both the characterstics of the food order as well as external factors such as delivery distance, order time, weather conditions, traffic and which of these factors are most strongly associated with delivery time? 
 
 Set-up instructions:
 1. Run `uv sync` in the terminal 
