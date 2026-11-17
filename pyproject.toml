@@ -7,7 +7,15 @@ authors = [
     { name = "Shravan Chandra", email = "shravanc.nyc@gmail.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "altair>=6.3.0",
+    "jupyter>=1.1.1",
+    "kagglehub>=1.0.3",
+    "numpy>=2.5.5",
+    "pandas>=3.1.1",
+    "scikit-learn>=1.9.1",
+    "seaborn>=0.13.2",
+]
 
 [project.scripts]
 dsci-522-group-18-predicting-food-delivery-time = "dsci_522_group_18_predicting_food_delivery_time:main"
