@@ -9,8 +9,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from food_delivery_utils import (PROCESSED_COLS, PROCESSED_DATA_PATH, RAW_DATA_PATH, load_clean,
-                                 write_csv_atomic)
+from food_delivery_utils import PROCESSED_COLS, PROCESSED_DATA_PATH, RAW_DATA_PATH, load_clean
 
 parser = argparse.ArgumentParser(description='Clean the raw food delivery data.')
 parser.add_argument('--raw', type=Path, default=RAW_DATA_PATH, help='path to the raw train.csv')
@@ -32,5 +31,6 @@ print(f'Removed {unusable.sum()} rows with a missing order date or delivery time
 if df.empty:
     sys.exit('No usable rows left (every row lacks an order date or delivery time); nothing was written.')
 
-write_csv_atomic(df, args.out)
+args.out.parent.mkdir(parents=True, exist_ok=True)
+df.to_csv(args.out, index=False)
 print(f'Wrote {len(df)} rows x {df.shape[1]} columns to {args.out}')
