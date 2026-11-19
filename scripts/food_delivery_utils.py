@@ -1,9 +1,6 @@
 # Shared loading and cleaning for the Food Delivery Time dataset (Kaggle, Gaurav Malik).
-# Used by eda_food_delivery.py and modeling_food_delivery.py so both see identical data.
+# Imported by the project's scripts and notebooks so they all see identical data.
 
-import os
-import shutil
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -102,46 +99,3 @@ def drop_corrupted(df):
     """Remove the rows with impossible courier ages/ratings."""
     bad = df['Age'].isin(BAD_AGES) | df['Rating'].isin(BAD_RATINGS)
     return df[~bad].reset_index(drop=True)
-
-
-def _temp_sibling(path):
-    """Create an empty temporary file next to path. It ends with path's own suffixes
-    (e.g. '.csv.gz') so pandas infers the same format and compression as for path."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f'.{path.name}.',
-                               suffix=f'.tmp{"".join(path.suffixes)}')
-    os.close(fd)
-    return Path(tmp)
-
-
-def write_csv_atomic(df, path):
-    """Write df to path as CSV without ever leaving a partial file at path."""
-    path = Path(path)
-    tmp = _temp_sibling(path)
-    try:
-        df.to_csv(tmp, index=False)
-        os.replace(tmp, path)
-    finally:
-        tmp.unlink(missing_ok=True)
-
-
-def copy_all_atomic(pairs):
-    """Copy each (src, dst) pair. Every file is copied to a temporary sibling first, and
-    destinations are replaced only once all copies have succeeded, so a failure part-way
-    leaves every existing destination untouched."""
-    pairs = [(Path(src), Path(dst)) for src, dst in pairs]
-    blocked = [dst for _, dst in pairs if dst.is_dir()]
-    if blocked:
-        raise IsADirectoryError(f'Cannot replace {blocked[0]}: a directory is in the way')
-
-    staged = []
-    try:
-        for src, dst in pairs:
-            tmp = _temp_sibling(dst)
-            staged.append((tmp, dst))
-            shutil.copy2(src, tmp)
-        for tmp, dst in staged:
-            os.replace(tmp, dst)
-    finally:
-        for tmp, _ in staged:
-            tmp.unlink(missing_ok=True)
