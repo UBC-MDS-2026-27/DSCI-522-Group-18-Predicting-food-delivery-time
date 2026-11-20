@@ -13,6 +13,11 @@ uv run python scripts/download_data.py
 ```
 uv run python scripts/clean_data.py
 ```
+4. Split the cleaned data by date. Orders from 27 March 2022 onwards (the final 11 days) are held out as the test set in `data/processed/test.csv`; earlier orders go to `data/processed/train.csv`. The EDA and model tuning use the training set only.
+```
+uv run python scripts/split_data.py
+```
+5. Explore the training data in `notebooks/eda_food_delivery.ipynb`. Open it with `uv run jupyter lab` and run all cells.
 
 
 Food Delivery Dataset (Gaurav Malik, https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset) - Kaggle lists the license as "Other (specified in description)", but the description does not state any terms. We use it only for non-commercial, educational purposes and do not redistribute the raw data in this repository; run `scripts/download_data.py` (step 2 above) to download it from Kaggle.
