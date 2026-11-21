@@ -48,9 +48,10 @@ We downloaded the data using the KaggleHub Python package and saved the raw CSV 
 ```{python}
 from pathlib import Path
 import kagglehub
+import shutil
 
 
-DATA_DIR = Path("../data")  # Quarto runs code from the analysis/ folder
+DATA_DIR = Path("data")  # Quarto runs code from the analysis/ folder
 RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 
@@ -62,10 +63,19 @@ PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 ### Downloading the Data
 ```{python}
 # Download the original data into data/raw/
+dataset_path = Path(kagglehub.dataset_download("gauravmalik26/food-delivery-dataset/versions/1"))
 
-# cache_dir = Path(kagglehub.dataset_download("gauravmalik26/food-delivery-dataset/versions/1"))
-# for name in ["train.csv", "test.csv", "Sample_Submission.csv"]:
-#     shutil.copy2(cache_dir / name, raw_dir / name)
+# Original dataset is given as training and test sets
+for filename in ['train.csv', 'test.csv']:
+    source = dataset_path / filename 
+    destination = RAW_DIR / filename
+
+    if source.resolve() != destination.resolve():
+        shutil.copy2(source, destination)
+
+raw_train = pd.read_csv(RAW_DIR / 'train.csv')
+raw_test = pd.read_csv(RAW_DIR / 'test.csv')
+
 ```
 
 
