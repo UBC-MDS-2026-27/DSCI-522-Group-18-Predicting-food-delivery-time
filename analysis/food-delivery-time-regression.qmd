@@ -319,9 +319,56 @@ distance_plot
 Figure 2 shows a positive association between straight-line delivery distance and delivery time, as we can see from the upward-sloping regression line. However, we also see substantial variation in delivery times at similar distances which suggests that distance alone can't fully explain delivery time. The distances shown in the plot also exhibit distinct vertical clusters which potentially reflect systematic increments in the recorded geographic coordinates. This might indicate that other factors may provide more predictive information. 
 
 ```{python}
+#| label: fig-traffic-time
+#| fig-cap: "Median delivery time by road traffic density in the training dataset."
 
+# Calculate median delivery time for each traffic category
+traffic_summary = (
+    train_clean
+    .groupby("Road_traffic_density")["target"]
+    .agg(["median", "count"])
+    .reset_index()
+)
+
+# Plot median delivery time by traffic density
+traffic_plot = alt.Chart(traffic_summary).mark_bar().encode(
+    x=alt.X("Road_traffic_density:N", sort=["Low", "Medium", "High", "Jam"], title="Road traffic density"),
+    y=alt.Y("median:Q", title="Median delivery time (minutes)"),
+    tooltip=[
+        alt.Tooltip("Road_traffic_density:N", title="Traffic density"),
+        alt.Tooltip("median:Q", title="Median delivery time", format=".1f"),
+        alt.Tooltip("count:Q", title="Number of orders")
+    ]
+).properties(width=650, height=350, title="Delivery Time by Traffic Density")
+
+
+traffic_plot
+```
+Figure 3 shows a positive association between road traffic density and delivery time. The media  delivery time increases from 20 minutes under low traffic to 31 minutes during traffic jams which is a difference of 11 minutes. Additionally, we also see that under medium and high traffic conditions, the median delivery times are about the same at 26 and 27 minutes, respectively. The differences show here suggest that traffic density could be an important predictor of delivery time. 
+
+```{python}
+#| label: fig-weather-time
+#| fig-cap: "Median delivery time by weather condition in the training dataset."
+
+# Calculate median delivery time for each weather condition
+weather_summary = train_clean.groupby("Weatherconditions")["target"].agg(["median", "count"]).reset_index()
+
+# Plot median delivery time by weather condition
+weather_plot = alt.Chart(weather_summary).mark_bar().encode(
+    x=alt.X("Weatherconditions:N", sort=alt.SortField(field="median", order="descending"), title="Weather conditions", axis=alt.Axis(labelAngle=-30)),
+    y=alt.Y("median:Q", title="Median delivery time (minutes)"),
+    tooltip=[
+        alt.Tooltip("Weatherconditions:N", title="Weather condition" ),
+        alt.Tooltip("median:Q", title="Median delivery time", format=".1f"),
+        alt.Tooltip("count:Q",title="Number of orders")
+    ]
+).properties(width=650, height=350, title="Delivery Time by Weather Conditions")
+
+
+weather_plot
 ```
 
+Figure 4 shows us differences in the median delivery times under different weather conditions. We can see that sunny weather conditions have the shortest median delivery time at 20 minutes, while cloudy and foggy weather have the longest times at 28 minutes. Sandstorms, stormy weather and windy weather all have median delivery times of 26 minutes. Thus, the groupings suggest that different weather categories are associated with noticeably different typical delivery times. However, in each of the three groupings within this plot, we can see that the similar medians within each gorup can suggest that some weather conditons can provide comparable predictive information. Therefore, making weather another potentially useful predictor for delivery time. 
 
 ## Models
 
