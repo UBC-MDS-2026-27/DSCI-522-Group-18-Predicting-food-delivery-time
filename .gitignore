@@ -1,7 +1,6 @@
 .venv/
 .DS_Store
 data/raw/Food_Delivery_Dataset/
-data/processed/
 data/*.zip
 __pycache__/
 /.quarto/
