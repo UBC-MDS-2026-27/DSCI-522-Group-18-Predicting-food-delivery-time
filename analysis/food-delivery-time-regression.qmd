@@ -209,8 +209,8 @@ def clean_data(data):
 train_clean = clean_data(train_df)
 test_clean = clean_data(test_df)
 
-train_df.to_csv(PROCESSED_DIR / "train.csv", index=False)
-test_df.to_csv(PROCESSED_DIR / "test.csv", index=False)
+train_clean.to_csv(PROCESSED_DIR / "train.csv", index=False)
+test_clean.to_csv(PROCESSED_DIR / "test.csv", index=False)
 
 ```
 
