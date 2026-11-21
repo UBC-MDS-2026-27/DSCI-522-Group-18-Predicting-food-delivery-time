@@ -47,18 +47,27 @@ We downloaded the data using the KaggleHub Python package and saved the raw CSV 
 
 ```{python}
 from pathlib import Path
-import shutil
-
 import kagglehub
 
-data_dir = Path("../data")  # Quarto runs code from the analysis/ folder
-raw_dir = data_dir / "raw" / "Food_Delivery_Dataset"
-raw_dir.mkdir(parents=True, exist_ok=True)
 
-cache_dir = Path(kagglehub.dataset_download("gauravmalik26/food-delivery-dataset/versions/1"))
-for name in ["train.csv", "test.csv", "Sample_Submission.csv"]:
-    shutil.copy2(cache_dir / name, raw_dir / name)
+DATA_DIR = Path("../data")  # Quarto runs code from the analysis/ folder
+RAW_DIR = DATA_DIR / "raw"
+PROCESSED_DIR = DATA_DIR / "processed"
+
+# Create the folders in data if they don't exist
+RAW_DIR.mkdir(parents=True, exist_ok=True)
+PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 ```
+
+### Downloading the Data
+```{python}
+# Download the original data into data/raw/
+
+# cache_dir = Path(kagglehub.dataset_download("gauravmalik26/food-delivery-dataset/versions/1"))
+# for name in ["train.csv", "test.csv", "Sample_Submission.csv"]:
+#     shutil.copy2(cache_dir / name, raw_dir / name)
+```
+
 
 ### Clean the data
 
