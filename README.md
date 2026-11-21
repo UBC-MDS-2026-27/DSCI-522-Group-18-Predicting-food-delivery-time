@@ -28,11 +28,18 @@ This runs the whole analysis and writes `analysis/food-delivery-time-regression.
 - [uv](https://docs.astral.sh/uv/getting-started/installation/), which installs the Python packages listed in `pyproject.toml`
 - [Quarto](https://quarto.org/docs/get-started/), to render the report
 
+## Contributing and community guidelines
+
+- [Contributing guidelines](CONTRIBUTING.md): how to report issues and suggest changes
+- [Code of conduct](CODE_OF_CONDUCT.md): expected behaviour in this project
+
 ## Licenses
 
 - Report and other non-code materials: CC BY-NC-ND 4.0
 - Code: MIT
 - [Food Delivery Dataset](https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset) (Gaurav Malik): Kaggle lists the license as "Other (specified in description)", but the description does not state any terms. We use it only for non-commercial, educational purposes and do not redistribute the raw data in this repository; rendering the report (step 3 above) downloads it from Kaggle.
+
+Full license terms can be viewed [here](LICENSE.md).
 
 ## Limitations
 
