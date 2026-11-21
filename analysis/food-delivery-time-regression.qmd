@@ -29,7 +29,11 @@ This project investigates whether food delivery times can be predicted using ord
 
 # Introduction
 
+Online food delivery services rely on accurate delivery-time estimates to manage customer expectations and improve operational efficiency. However, delivery times can vary considerably depending on factors such as travel distance, traffic congestion, weather conditions, and order timing. Previous research has explored machine learning approaches for estimating food delivery arrival times, demonstrating their potential to improve prediction accuracy and support delivery operations [2, 3].
 
+This project aims to answer the following research question: To what extent can food delivery times be predicted using order characteristics, delivery conditions, and external factors such as traffic, weather, and time of day? In addition to evaluating predictive performance, we investigate which recorded factors are most strongly associated with variation in delivery times. Understanding these relationships may provide insights into the conditions under which deliveries tend to take longer, although these associations do not necessarily imply causation.
+
+To investigate this question, we use the Food Delivery Dataset published by Gaurav Malik on Kaggle [1]. Each observation represents an individual food delivery and contains information about the order, delivery personnel, geographic locations, weather, traffic conditions, and other delivery characteristics. Our response variable is the recorded delivery time, measured in minutes. Candidate predictors include the type of order, order time, distance between the restaurant and delivery location, road traffic density, and weather conditions. We use supervised regression methods to predict delivery duration and evaluate their performance on later, held-out observations.
 
 
 # Methods
