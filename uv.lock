@@ -465,7 +465,7 @@ wheels = [
 [[package]]
 name = "dsci-522-group-18-predicting-food-delivery-time"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "altair" },
     { name = "jupyter" },
