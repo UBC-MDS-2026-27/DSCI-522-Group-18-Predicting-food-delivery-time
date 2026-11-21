@@ -121,7 +121,7 @@ print(f"Training set: {len(train_df):,} orders ({train_df['date'].min():%b %d} t
 print(f"Test set: {len(test_df):,} orders ({test_df['date'].min():%b %d} to {test_df['date'].max():%b %d})")
 ```
 
-### Build the models
+## Models
 
 We predict delivery time in minutes from information that is known when an order is dispatched: courier age, rating and vehicle, the number of deliveries the courier is carrying, straight-line distance, order hour, day of the week, weather, traffic, order type, festival and area type. We first remove the orders with impossible courier details (age 15 or 50, or a rating of 1 or 6).
 
@@ -205,7 +205,7 @@ tuning = pd.DataFrame({
 tuning.fillna({"Maximum depth": "Unlimited"}).nsmallest(5, "Validation MAE (min)").style.format(precision=2).hide()
 ```
 
-## Results
+# Results
 
 @tbl-test shows how each model performs on the test orders, which were not used for any of the choices above. The other models are refitted on all training orders so that every model has seen the same data. Only the decision tree was tuned, which gives it an advantage over the default SVR.
 
