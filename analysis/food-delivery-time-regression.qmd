@@ -250,3 +250,5 @@ top.plot.barh(ax=ax)
 ax.set(xlabel="Increase in MAE after shuffling (min)", ylabel="")
 plt.show()
 ```
+
+# References
