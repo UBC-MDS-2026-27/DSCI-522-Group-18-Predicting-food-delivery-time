@@ -1,0 +1,93 @@
+---
+title: "Predicting Delivery Time for Online Food Orders"
+format: html
+jupyter: python3
+---
+
+## Methods
+
+### Download the data
+
+We use version 1 of Gaurav Malik's Food Delivery Dataset from Kaggle. We save the raw CSV files under `data/raw/Food_Delivery_Dataset/`.
+
+```{python}
+from pathlib import Path
+import shutil
+
+import kagglehub
+
+data_dir = Path("../data")  # Quarto runs code from the analysis/ folder
+raw_dir = data_dir / "raw" / "Food_Delivery_Dataset"
+raw_dir.mkdir(parents=True, exist_ok=True)
+
+cache_dir = Path(kagglehub.dataset_download("gauravmalik26/food-delivery-dataset/versions/1"))
+for name in ["train.csv", "test.csv", "Sample_Submission.csv"]:
+    shutil.copy2(cache_dir / name, raw_dir / name)
+```
+
+### Clean the data
+
+We standardize formats, derive straight-line delivery distance, and remove duplicate rows and rows missing an order date or delivery time. Placeholder coordinates (values near zero) yield a missing distance. We save the cleaned data to `data/processed/food_delivery_clean.csv`.
+
+```{python}
+import numpy as np
+import pandas as pd
+
+df = pd.read_csv(raw_dir / "train.csv")
+df.columns = df.columns.str.strip()
+for column in df.select_dtypes(exclude="number").columns:
+    df[column] = df[column].astype(str).str.strip().replace({"NaN": np.nan, "nan": np.nan})
+
+df["Weatherconditions"] = (df["Weatherconditions"]
+                           .str.replace("conditions ", "", regex=False)
+                           .replace("NaN", np.nan))
+df["target"] = df["Time_taken(min)"].str.replace("(min) ", "", regex=False).astype(float)
+df["Age"] = pd.to_numeric(df["Delivery_person_Age"])
+df["Rating"] = pd.to_numeric(df["Delivery_person_Ratings"])
+df["multiple_deliveries"] = pd.to_numeric(df["multiple_deliveries"])
+
+df["date"] = pd.to_datetime(df["Order_Date"], format="%d-%m-%Y")
+df["dow"] = df["date"].dt.day_of_week
+df["order_hour"] = pd.to_datetime(df["Time_Orderd"], format="%H:%M:%S", errors="coerce").dt.hour
+
+
+def haversine_km(lat1, lon1, lat2, lon2):
+    """Compute the great-circle distance in kilometers."""
+    lat1, lon1, lat2, lon2 = map(np.radians, (lat1, lon1, lat2, lon2))
+    a = (np.sin((lat2 - lat1) / 2) ** 2
+         + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2) ** 2)
+    return 6371 * 2 * np.arcsin(np.sqrt(a))
+
+
+coord_cols = ["Restaurant_latitude", "Restaurant_longitude",
+              "Delivery_location_latitude", "Delivery_location_longitude"]
+coords = df[coord_cols].abs()  # Correct sign errors in this dataset
+coords = coords.where((coords >= 1).all(axis=1), axis=0)  # Placeholder coordinates become missing
+df["dist_km"] = haversine_km(*(coords[column] for column in coord_cols))
+
+processed_cols = ["ID", "Age", "Rating", "Vehicle_condition", "Type_of_vehicle", "multiple_deliveries",
+                  "Weatherconditions", "Road_traffic_density", "Type_of_order", "Festival", "City",
+                  "date", "dow", "order_hour", "dist_km", "target"]
+cleaned = df[processed_cols].drop_duplicates().dropna(subset=["date", "target"])
+print(f"Removed {len(df) - len(cleaned)} duplicate or unusable rows; {len(cleaned):,} orders remain")
+
+(data_dir / "processed").mkdir(exist_ok=True)
+cleaned.to_csv(data_dir / "processed" / "food_delivery_clean.csv", index=False)
+```
+
+### Split the data
+
+Before any exploration, we hold out the last 11 days of orders (from March 27, 2022) as the test set. Splitting by date rather than at random means the model is evaluated on orders placed after every order it learned from, as it would be when used in practice. The test set is not used again until the final evaluation.
+
+```{python}
+assert cleaned["ID"].is_unique, "An order ID appears twice and could land in both sets"
+
+test_start = pd.Timestamp("2022-03-27")
+train_df = cleaned[cleaned["date"] < test_start]
+test_df = cleaned[cleaned["date"] >= test_start]
+
+train_df.to_csv(data_dir / "processed" / "train.csv", index=False)
+test_df.to_csv(data_dir / "processed" / "test.csv", index=False)
+print(f"Training set: {len(train_df):,} orders ({train_df['date'].min():%b %d} to {train_df['date'].max():%b %d})")
+print(f"Test set: {len(test_df):,} orders ({test_df['date'].min():%b %d} to {test_df['date'].max():%b %d})")
+```
