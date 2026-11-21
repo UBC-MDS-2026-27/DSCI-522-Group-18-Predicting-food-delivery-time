@@ -370,6 +370,31 @@ weather_plot
 
 Figure 4 shows us differences in the median delivery times under different weather conditions. We can see that sunny weather conditions have the shortest median delivery time at 20 minutes, while cloudy and foggy weather have the longest times at 28 minutes. Sandstorms, stormy weather and windy weather all have median delivery times of 26 minutes. Thus, the groupings suggest that different weather categories are associated with noticeably different typical delivery times. However, in each of the three groupings within this plot, we can see that the similar medians within each gorup can suggest that some weather conditons can provide comparable predictive information. Therefore, making weather another potentially useful predictor for delivery time. 
 
+```{python}
+#| label: fig-order-hour
+#| fig-cap: "Median delivery time by hour of order placement in the training dataset."
+
+# Calculate median delivery time and order count by hour
+hour_summary = train_clean.groupby("order_hour")["target"].agg(["median", "count"]).reset_index()
+
+
+# Plot median delivery time by order hour
+hour_plot = alt.Chart(hour_summary).mark_line(point=True).encode(
+    x=alt.X("order_hour:Q", title="Hour of order placement (24-hour clock)", axis=alt.Axis(values=list(range(0, 24, 2))), scale=alt.Scale(domain=[0, 23])),
+    y=alt.Y("median:Q", title="Median delivery time (minutes)", scale=alt.Scale(zero=False)),
+    tooltip=[
+        alt.Tooltip("order_hour:Q", title="Order hour", format=".0f"),
+        alt.Tooltip("median:Q", title="Median delivery time", format=".1f"),
+        alt.Tooltip("count:Q", title="Number of orders")
+    ]
+).properties(width=650, height=350, title="Median Delivery Time by Order Hour")
+
+
+hour_plot
+```
+
+Figure 5 shows the median delivery times varying considerably depending on the hour the delivery was ordered. The longest median delivery time occur during the evening hours, especially between 19:00 and 21:00 which peaks at 20:00 with a delivery time of 31 minutes. The sharpest increase also happens from the hours 11:00 to 14:00, when the median delivery times range from 27-28 minutes. These periods may very well concincide with the typical dinner and lunch hours which suggests that there's increased demand of food delivery and may contribute to longer delivery times. In contrast, the orders placed between 8:00 and 10:00 have a median delivery time of 19 minutes. The noticeable differences across hours suggest that the timing of the order could be an important predictor of delivery time. 
+
 ## Models
 
 We predict delivery time in minutes from information that is known when an order is dispatched: courier age, rating and vehicle, the number of deliveries the courier is carrying, straight-line distance, order hour, day of the week, weather, traffic, order type, festival and area type. We first remove the orders with impossible courier details (age 15 or 50, or a rating of 1 or 6).
