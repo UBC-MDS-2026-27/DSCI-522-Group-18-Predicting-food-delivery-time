@@ -35,7 +35,6 @@ This project aims to answer the following research question: To what extent can 
 
 To investigate this question, we use the Food Delivery Dataset published by Gaurav Malik on Kaggle [1]. Each observation represents an individual food delivery and contains information about the order, delivery personnel, geographic locations, weather, traffic conditions, and other delivery characteristics. Our response variable is the recorded delivery time, measured in minutes. Candidate predictors include the type of order, order time, distance between the restaurant and delivery location, road traffic density, and weather conditions. We use supervised regression methods to predict delivery duration and evaluate their performance on later, held-out observations.
 
-
 # Methods
 
 ## Data
@@ -554,6 +553,16 @@ ax.set(xlabel="Increase in MAE after shuffling (min)", ylabel="")
 plt.show()
 ```
 
+# Discussion
 
+We started this project to examine how well food delivery times can be predicted from their order details and external conditions. Our tuned decision tree shows that they can be predicted fairly well, as it predicted delivery times for later, unseen orders with an MAE of 3.37 minutes and an R^2 of 0.80. It outperformed a linear regression baseline, which had an MAE of 4.77 minutes and an R^2 of 0.60.
+
+Our modelling produced several findings that matched what we expected after performing exploratory data analysis. Weather, traffic density, and distance all exhibited clear differences in median delivery time and these were the three most important inputs as measured by permutation importance. However, we also encountered an unexpected result. Median delivery time varied heavily with the hour of order placement, yet permutation importance ranks it as the least important input to our model. This could be because the busiest hours for orders likely coincide with heavier traffic, meaning that the hour of the order provides limited information once traffic density is known.
+
+Transferring our findings to the real-world context of food delivery orders, our model gives us reason to believe that delivery platforms could improve their time estimates by adjusting for the current weather conditions and traffic, rather than relying mainly on distance. It is possible that more accurate estimates could increase the satisfaction of an ordering customer and reduce complaints and order cancellations. It may also lead to delivery drivers receiving more tips as there would be fewer instances of deliveries taking longer than predicted. There may also be an opportunity for the delivery platforms to use weather and traffic density to optimize courier assignments and pay during periods of inclement weather or heavy traffic. For example, a delivery service with close ties to a ride-hailing service, such as Uber and Uber Eats, may be able to draw from each other's operations to improve estimated arrival times across both apps [5].
+
+Our analysis also had several limitations. The original source of the data is not documented, meaning the data could be partially or fully synthetic and therefore unreflective of real-world deliveries. The data is also limited to only about two months in 2022, so the model has not had the opportunity to adjust for seasonal changes or long-term trends. We were also limited to using straight-line distance for each order, which does not fully capture the real-world distance a courier must traverse to deliver an order. Since we chose a decision tree rather than SVR for interpretability despite the SVR model scoring better on validation data, we only tuned a decision tree. It is possible that tuning an SVR model could have led to results that were strong enough to override the decision tree's interpretability. Finally, permutation importance shows which inputs the model relies on rather than what causes deliveries to take longer. Related inputs like order hour and traffic density can share importance with each other.
+
+Future analysis should be performed to study how our model performs on real, documented data collected over a longer period of time. Incorporating real-world travel distance rather than straight-line distance would also improve our model if feasible. Tuning other models, SVR or otherwise, could also show whether a more accurate model is worth losing the interpretability of a decision tree.
 
 # References
