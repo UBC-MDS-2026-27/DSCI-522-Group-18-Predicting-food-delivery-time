@@ -13,7 +13,7 @@ import requests
 import zipfile
 import altair as alt
 from sklearn import set_config
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
 from sklearn.compose import make_column_transformer, make_column_selector
 from sklearn.neighbors import KNeighborsClassifier
@@ -93,72 +93,128 @@ print(raw_test.columns.tolist())
 
 The original idea here was to merge the given train and test sets if the shapes of the two dataframes were compatible. However, after inspection, we can see that the raw test dataset does not have the target variable of `Time_taken(min)`. Therefore, we will use the original training dataset as our complete labelled dataset and partition it into training and test sets for our analysis. 
 
-### Clean the data
+```{python}
+full_data = raw_train.copy()
+```
 
-We standardize formats, derive straight-line delivery distance, and remove duplicate rows and rows missing an order date or delivery time. Placeholder coordinates (values near zero) yield a missing distance. We save the cleaned data to `data/processed/food_delivery_clean.csv`.
+## Analysis 
+
+
+
+### Splitting the data
 
 ```{python}
-import numpy as np
-import pandas as pd
+# Parse dates to determine the chronological split
+order_dates = pd.to_datetime(
+    full_data["Order_Date"].astype("string").str.strip(),
+    format="%d-%m-%Y",
+    errors="coerce"
+)
 
-df = pd.read_csv(raw_dir / "train.csv")
-df.columns = df.columns.str.strip()
-for column in df.select_dtypes(exclude="number").columns:
-    df[column] = df[column].astype(str).str.strip().replace({"NaN": np.nan, "nan": np.nan})
+print("Earliest date:", order_dates.min())
+print("Latest date:", order_dates.max())
+print("Number of unique dates:", order_dates.nunique())
+print("Missing dates:", order_dates.isna().sum())
+```
 
-df["Weatherconditions"] = (df["Weatherconditions"]
-                           .str.replace("conditions ", "", regex=False)
-                           .replace("NaN", np.nan))
-df["target"] = df["Time_taken(min)"].str.replace("(min) ", "", regex=False).astype(float)
-df["Age"] = pd.to_numeric(df["Delivery_person_Age"])
-df["Rating"] = pd.to_numeric(df["Delivery_person_Ratings"])
-df["multiple_deliveries"] = pd.to_numeric(df["multiple_deliveries"])
+Before any exploration, we hold out the last 11 days of orders (25%) (from March 27, 2022) as the test set. Splitting by date rather than at random means the model is evaluated on orders placed after every order it learned from, as it would be when used in practice. The test set is not used again until the final evaluation.
 
-df["date"] = pd.to_datetime(df["Order_Date"], format="%d-%m-%Y")
-df["dow"] = df["date"].dt.day_of_week
-df["order_hour"] = pd.to_datetime(df["Time_Orderd"], format="%H:%M:%S", errors="coerce").dt.hour
 
+```{python}
+assert full_data["ID"].is_unique, "An order ID appears twice and could land in both sets"
+
+full_data["Order_Date"] = pd.to_datetime(
+    full_data["Order_Date"].str.strip(),
+    format="%d-%m-%Y",
+    errors="coerce"
+)
+
+test_start = pd.Timestamp("2022-03-27")
+train_df = full_data[full_data["Order_Date"] < test_start].copy()
+test_df = full_data[full_data["Order_Date"] >= test_start].copy()
+
+train_df.to_csv(PROCESSED_DIR / "train.csv", index=False)
+test_df.to_csv(PROCESSED_DIR / "test.csv", index=False)
+
+# Display date ranges
+print(f"Training set: {len(train_df):,} orders ({train_df['Order_Date'].min():%b %d} to {train_df['Order_Date'].max():%b %d})")
+print(f"Test set: {len(test_df):,} orders ({test_df['Order_Date'].min():%b %d} to {test_df['Order_Date'].max():%b %d})")
+```
+
+
+### Clean the data
+The training and test datasets were both cleaned separately using the same transformations. We standardized formats, derived straight-line delivery distance, and removed duplicate rows and rows missing an order date or delivery time. Placeholder coordinates (values near zero) yield a missing distance. 
+
+We save the cleaned data to `data/processed/food_delivery_clean.csv`.
+
+
+```{python}
 
 def haversine_km(lat1, lon1, lat2, lon2):
-    """Compute the great-circle distance in kilometers."""
+    """Computes the straight-line distance between two locations (using latitude and longitude) in kilometres."""
     lat1, lon1, lat2, lon2 = map(np.radians, (lat1, lon1, lat2, lon2))
     a = (np.sin((lat2 - lat1) / 2) ** 2
          + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2) ** 2)
     return 6371 * 2 * np.arcsin(np.sqrt(a))
 
+```
 
-coord_cols = ["Restaurant_latitude", "Restaurant_longitude",
-              "Delivery_location_latitude", "Delivery_location_longitude"]
-coords = df[coord_cols].abs()  # Correct sign errors in this dataset
-coords = coords.where((coords >= 1).all(axis=1), axis=0)  # Placeholder coordinates become missing
-df["dist_km"] = haversine_km(*(coords[column] for column in coord_cols))
+We define a cleaning function to be used on both train and test sets.
+```{python}
+def clean_data(data):
+    df = data.copy()
 
-processed_cols = ["ID", "Age", "Rating", "Vehicle_condition", "Type_of_vehicle", "multiple_deliveries",
+    # standardize column names
+    df.columns = df.columns.str.strip()
+
+    for col in df.select_dtypes(exclude='number').columns:
+        df[col] = df[col].astype(str).str.strip().replace({"NaN": np.nan, "nan": np.nan})
+
+    # Cleaning weather conditions
+    df["Weatherconditions"] = df["Weatherconditions"].str.replace("conditions ", "", regex=False)
+
+    # Convert target to numeric (minutes)
+    df["target"] = pd.to_numeric(df["Time_taken(min)"].astype(str).str.replace("(min) ", "", regex=False), errors='coerce')
+
+    df["Age"] = pd.to_numeric(df["Delivery_person_Age"])
+    df["Rating"] = pd.to_numeric(df["Delivery_person_Ratings"])
+    df["multiple_deliveries"] = pd.to_numeric(df["multiple_deliveries"])
+    df['Vehicle_condition'] = pd.to_numeric(df['Vehicle_condition'])
+
+    df["date"] = pd.to_datetime(df["Order_Date"])
+
+    # Create a day of week column
+    df["dow"] = df["date"].dt.day_of_week
+    
+    # Create an order hour column
+    df["order_hour"] = pd.to_datetime(df["Time_Orderd"], format="%H:%M:%S", errors="coerce").dt.hour
+
+    # Converting coordinates to numeric
+    coord_cols = ["Restaurant_latitude", "Restaurant_longitude", "Delivery_location_latitude", "Delivery_location_longitude"]
+    coords = df[coord_cols].apply(pd.to_numeric, errors='coerce').astype(float)
+
+    # Calculate distances
+    df["dist_km"] = haversine_km(*(coords[col] for col in coord_cols))
+
+    processed_cols = ["ID", "Age", "Rating", "Vehicle_condition", "Type_of_vehicle", "multiple_deliveries",
                   "Weatherconditions", "Road_traffic_density", "Type_of_order", "Festival", "City",
                   "date", "dow", "order_hour", "dist_km", "target"]
-cleaned = df[processed_cols].drop_duplicates().dropna(subset=["date", "target"])
-print(f"Removed {len(df) - len(cleaned)} duplicate or unusable rows; {len(cleaned):,} orders remain")
 
-(data_dir / "processed").mkdir(exist_ok=True)
-cleaned.to_csv(data_dir / "processed" / "food_delivery_clean.csv", index=False)
+    cleaned = df[processed_cols].drop_duplicates().dropna(subset=["date", "target"]).loc[lambda x: x['target'] > 0].reset_index(drop=True)
+
+    return cleaned
 ```
-
-### Split the data
-
-Before any exploration, we hold out the last 11 days of orders (from March 27, 2022) as the test set. Splitting by date rather than at random means the model is evaluated on orders placed after every order it learned from, as it would be when used in practice. The test set is not used again until the final evaluation.
 
 ```{python}
-assert cleaned["ID"].is_unique, "An order ID appears twice and could land in both sets"
+train_clean = clean_data(train_df)
+test_clean = clean_data(test_df)
 
-test_start = pd.Timestamp("2022-03-27")
-train_df = cleaned[cleaned["date"] < test_start]
-test_df = cleaned[cleaned["date"] >= test_start]
+train_df.to_csv(PROCESSED_DIR / "train.csv", index=False)
+test_df.to_csv(PROCESSED_DIR / "test.csv", index=False)
 
-train_df.to_csv(data_dir / "processed" / "train.csv", index=False)
-test_df.to_csv(data_dir / "processed" / "test.csv", index=False)
-print(f"Training set: {len(train_df):,} orders ({train_df['date'].min():%b %d} to {train_df['date'].max():%b %d})")
-print(f"Test set: {len(test_df):,} orders ({test_df['date'].min():%b %d} to {test_df['date'].max():%b %d})")
 ```
+
+
 
 
 # References
