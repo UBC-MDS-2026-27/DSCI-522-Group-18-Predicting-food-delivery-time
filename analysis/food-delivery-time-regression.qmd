@@ -171,7 +171,7 @@ def clean_data(data):
         df[col] = df[col].astype(str).str.strip().replace({"NaN": np.nan, "nan": np.nan})
 
     # Cleaning weather conditions
-    df["Weatherconditions"] = df["Weatherconditions"].str.replace("conditions ", "", regex=False)
+    df["Weatherconditions"] = df["Weatherconditions"].str.replace("conditions ", "", regex=False).replace("NaN", np.nan)
 
     # Convert target to numeric (minutes)
     df["target"] = pd.to_numeric(df["Time_taken(min)"].astype(str).str.replace("(min) ", "", regex=False), errors='coerce')
@@ -191,7 +191,9 @@ def clean_data(data):
 
     # Converting coordinates to numeric
     coord_cols = ["Restaurant_latitude", "Restaurant_longitude", "Delivery_location_latitude", "Delivery_location_longitude"]
-    coords = df[coord_cols].apply(pd.to_numeric, errors='coerce').astype(float)
+    coords = df[coord_cols].abs()  # Correct sign errors in this dataset
+    coords = coords.where((coords >= 1).all(axis=1), axis=0)  # Placeholder coordinates become missing
+    # coords = df[coord_cols].abs().apply(pd.to_numeric, errors='coerce').astype(float)
 
     # Calculate distances
     df["dist_km"] = haversine_km(*(coords[col] for col in coord_cols))
