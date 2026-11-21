@@ -25,6 +25,7 @@ _ = alt.renderers.enable("png", scale_factor=2)
 
 # Summary
 
+This project investigates whether food delivery times can be predicted using order characteristics and external conditions, including traffic density, weather, and time of day. Using the Food Delivery Dataset published by Gaurav Malik [1], we develop and compare regression models to predict recorded delivery durations in minutes. Model performance is evaluated primarily using mean absolute error (MAE), which expresses prediction error in minutes. The best-performing model was a tuned decision tree (maximum depth 15, minimum leaf size 40), which achieved a test MAE of 3.37 minutes and an R² of 0.80, compared to a linear regression baseline with an MAE of 4.77 minutes and an R² of 0.60. Permutation importance showed that the model relied most on weather and traffic density, followed by distance and courier rating. These findings may help improve delivery-time estimation, although limitations in the dataset and the observational nature of the analysis restrict their generalizability. A delivery app user at home should also expect longer waits during traffic jams and in cloudy or foggy weather.
 
 # Introduction
 
