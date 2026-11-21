@@ -21,7 +21,7 @@ In this project, we examine whether food delivery time can be predicted from ord
    uv run quarto render analysis/food-delivery-time-regression.qmd
    ```
 
-This runs the whole analysis and writes `analysis/food-delivery-time-regression.html`. The report downloads the Food Delivery Dataset from Kaggle into `data/raw/Food_Delivery_Dataset/` with Kaggle's official `kagglehub` package; the dataset is public, so no Kaggle account or API token is needed. It then writes the cleaned data and the training and test sets to `data/processed/`. The same commands work on Windows, macOS and Linux.
+This runs the whole analysis and writes `analysis/food-delivery-time-regression.html`. The report downloads the Food Delivery Dataset from Kaggle into `data/raw/train.csv` and `data/raw/test.csv` with Kaggle's official `kagglehub` package; the dataset is public, so no Kaggle account or API token is needed. It then writes the cleaned data and the training and test sets to `data/processed/`. The same commands work on Windows, macOS and Linux.
 
 ## Dependencies
 
@@ -37,7 +37,7 @@ This runs the whole analysis and writes `analysis/food-delivery-time-regression.
 
 - Report and other non-code materials: CC BY-NC-ND 4.0
 - Code: MIT
-- [Food Delivery Dataset](https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset) (Gaurav Malik): Kaggle lists the license as "Other (specified in description)", but the description does not state any terms. We use it only for non-commercial, educational purposes and do not redistribute the raw data in this repository; rendering the report (step 3 above) downloads it from Kaggle.
+- [Food Delivery Dataset](https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset) (Gaurav Malik): Kaggle lists the license as "Other (specified in description)", but the description does not state any terms. We use it only for non-commercial, educational purposes; rendering the report (step 3 above) downloads it from Kaggle.
 
 Full license terms can be viewed [here](LICENSE.md).
 
@@ -49,7 +49,7 @@ Full license terms can be viewed [here](LICENSE.md).
 
 ## AI use statement
 
-Code is written by a human team member with AI assistance during debugging. Ultimately, all decisions regarding what code to use were also made by a human team member.
+Code is written by a human team member with AI assistance during debugging. Ultimately, all decisions regarding what code to use were also made by a human team member. Claude was used to correct grammar during writing.
 
 ## Rendered report
 
