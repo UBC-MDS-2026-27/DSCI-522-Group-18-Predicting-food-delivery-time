@@ -1,4 +1,6 @@
 project:
+  type: default
+  execute-dir: project
   # Only render the report (otherwise README.md and other files render too)
   render:
     - analysis/*.qmd
@@ -8,3 +10,4 @@ format:
     # One self-contained HTML file, with figures and styles built in
     embed-resources: true
     toc: true
+
