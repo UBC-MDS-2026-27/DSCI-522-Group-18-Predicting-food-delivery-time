@@ -251,6 +251,10 @@ categorical_cols = [
 train_clean[categorical_cols].astype("string").describe().T
 ```
 
+The cleaned training dataset contains 34,042 delivery observations with delivery times ranging from 10 to 54 minutes with mean of 26.24 minutes and standard deviation of 9.36 minutes. This showed substantial variation in delivery times. Additionally, we see straight line distances averaging 9.59km with observed distances ranging from 1.47km to 20.97km. 
+
+The categorical features show us that motorcycles are the most common delivery vehicle type with over 50% of deliveries made on motorcycles. Metropolitan areas account for over 75% of nonmissing city-category observations and only 2.0% of non-missing festival observations occur during festivals. We'll have to account for these imbalances during interpretation of the regression results, partijcularly for hte less frequently observed delivery conditions. 
+
 ```{python}
 #| label: tbl-missing-values
 #| tbl-cap: Missing values in the processed training dataset.
