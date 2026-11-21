@@ -1,6 +1,7 @@
 ---
-title: "Predicting Delivery Time for Online Food Orders"
-format: html
+title: "Predicting Food Delivery Time from Order and External Conditions"
+author: "Steven Mou, Owen Lin, Rachel Lee, Shravan Chandra"
+date: "2026/11/15"
 jupyter: python3
 ---
 
