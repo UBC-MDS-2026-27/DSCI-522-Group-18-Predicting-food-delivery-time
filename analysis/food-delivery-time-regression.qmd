@@ -33,11 +33,17 @@ _ = alt.renderers.enable("png", scale_factor=2)
 
 
 
-## Methods
+# Methods
 
-### Download the data
+## Data
 
-We use version 1 of Gaurav Malik's Food Delivery Dataset from Kaggle. We save the raw CSV files under `data/raw/Food_Delivery_Dataset/`.
+The dataset used in this project is version 1 of the "Food Delivery Dataset" published by Gaurav Malik on Kaggle [1]. This dataset contains individual food delivery records which contain information about delivery personnel, order characteristics, geographic conditions, weather conditions, and road traffic density.
+
+Each row in this dataset represents a single food delivery order, and the response variable is the recorded delivery during in minutes (`Time_taken(min)`).
+
+We use these observations to investigate whether delivery times can be predicted accurately from the characteristics of the food orders along with external conditions. The original dataset can be found [here](https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset).
+
+We downloaded the data using the KaggleHub Python package and saved the raw CSV files under `data/raw/` directory to support reproducibility.
 
 ```{python}
 from pathlib import Path
