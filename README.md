@@ -3,19 +3,24 @@
 
 In this project, we aim to predict food delivery time based on the characteristics of the food order itself and external factors such as delivery distance, order time, weather conditions, and traffic. We also aim to determine which of these factors are the strongest predictors of delivery time.
 
-Set-up instructions:
-1. Run `uv sync` in the terminal 
-2. From the root of the repository, run the following in the terminal to download the Food Delivery Dataset from Kaggle into `data/raw/Food_Delivery_Dataset/`. It uses Kaggle's official `kagglehub` package (installed by `uv sync`); the dataset is public, so no Kaggle account or API token is needed. The same command works on Windows, macOS and Linux.
+Dependencies:
+- [uv](https://docs.astral.sh/uv/getting-started/installation/), which installs the Python packages listed in `pyproject.toml`
+- [Quarto](https://quarto.org/docs/get-started/), to render the report
+
+How to run the analysis:
+1. Clone this repository and open a terminal in its root folder.
+2. Install the Python environment:
 ```
-uv run python scripts/download_data.py
+uv sync
 ```
-3. Clean the data. This removes duplicate rows and rows without an order date or delivery time, fixes formatting and data types, marks invalid coordinates as missing, and writes the result to `data/processed/food_delivery_clean.csv`.
+3. Render the report:
 ```
-uv run python scripts/clean_data.py
+uv run quarto render analysis/food-delivery-time-regression.qmd
 ```
+This runs the whole analysis and writes `analysis/food-delivery-time-regression.html`. The report downloads the Food Delivery Dataset from Kaggle into `data/raw/Food_Delivery_Dataset/` with Kaggle's official `kagglehub` package; the dataset is public, so no Kaggle account or API token is needed. It then writes the cleaned data and the training and test sets to `data/processed/`. The same commands work on Windows, macOS and Linux.
 
 
-Food Delivery Dataset (Gaurav Malik, https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset) - Kaggle lists the license as "Other (specified in description)", but the description does not state any terms. We use it only for non-commercial, educational purposes and do not redistribute the raw data in this repository; run `scripts/download_data.py` (step 2 above) to download it from Kaggle.
+Food Delivery Dataset (Gaurav Malik, https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset) - Kaggle lists the license as "Other (specified in description)", but the description does not state any terms. We use it only for non-commercial, educational purposes and do not redistribute the raw data in this repository; rendering the report (step 3 above) downloads it from Kaggle.
 
 *Limitations*
 - The original source of the Food Delivery Dataset is not documented; it may be partly or fully synthetic.
