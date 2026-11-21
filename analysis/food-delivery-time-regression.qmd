@@ -91,3 +91,133 @@ test_df.to_csv(data_dir / "processed" / "test.csv", index=False)
 print(f"Training set: {len(train_df):,} orders ({train_df['date'].min():%b %d} to {train_df['date'].max():%b %d})")
 print(f"Test set: {len(test_df):,} orders ({test_df['date'].min():%b %d} to {test_df['date'].max():%b %d})")
 ```
+
+### Build the models
+
+We predict delivery time in minutes from information that is known when an order is dispatched: courier age, rating and vehicle, the number of deliveries the courier is carrying, straight-line distance, order hour, day of the week, weather, traffic, order type, festival and area type. We first remove the orders with impossible courier details (age 15 or 50, or a rating of 1 or 6).
+
+We judge models by mean absolute error (MAE), the average number of minutes a prediction is off by, because it is easy to interpret for an estimated delivery time. To choose between models without touching the test set, we hold out the last week of the training data (March 20 to 26) as a validation set, again so that models are evaluated on later orders than they learned from. Each model is a pipeline that fills in missing values (the median for numeric inputs, plus an indicator of which values were missing, and a "Missing" category for categorical inputs), scales numeric inputs and one-hot encodes categorical inputs. These steps are learned from the training rows only.
+
+```{python}
+from sklearn.compose import make_column_transformer
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import GridSearchCV, PredefinedSplit, cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.svm import SVR
+from sklearn.tree import DecisionTreeRegressor
+
+
+def drop_impossible(data):
+    return data[~(data["Age"].isin([15, 50]) | data["Rating"].isin([1, 6]))]
+
+
+numeric_cols = ["Age", "Rating", "Vehicle_condition", "multiple_deliveries", "dist_km", "order_hour", "dow"]
+categorical_cols = ["Weatherconditions", "Road_traffic_density", "Type_of_vehicle", "Type_of_order",
+                    "Festival", "City"]
+features = numeric_cols + categorical_cols
+
+model_train = drop_impossible(train_df)
+model_test = drop_impossible(test_df)
+X_train, y_train = model_train[features], model_train["target"]
+X_test, y_test = model_test[features], model_test["target"]
+
+# Fold 0 is the last week of training orders; the earlier orders (-1) are only used for fitting
+validation = PredefinedSplit(np.where(model_train["date"] >= pd.Timestamp("2022-03-20"), 0, -1))
+
+preprocessor = make_column_transformer(
+    (make_pipeline(SimpleImputer(strategy="median", add_indicator=True), StandardScaler()), numeric_cols),
+    (make_pipeline(SimpleImputer(strategy="constant", fill_value="Missing"),
+                   OneHotEncoder(handle_unknown="ignore")), categorical_cols),
+)
+```
+
+We compare three models with their default settings (@tbl-validation). Linear regression is the baseline. A decision tree can capture interactions, such as traffic mattering more for long trips, and support vector regression (SVR) can capture smooth non-linear patterns.
+
+```{python}
+#| label: tbl-validation
+#| tbl-cap: Validation MAE of each model with default settings.
+models = {
+    "Linear regression (baseline)": LinearRegression(),
+    "Decision tree": DecisionTreeRegressor(random_state=0),
+    "SVR": SVR(),
+}
+validation_mae = {
+    name: -cross_val_score(make_pipeline(preprocessor, model), X_train, y_train,
+                           cv=validation, scoring="neg_mean_absolute_error").mean()
+    for name, model in models.items()
+}
+pd.DataFrame({"Validation MAE (min)": validation_mae}).round(2)
+```
+
+The default SVR has a lower validation error than the default decision tree. We still choose to tune the decision tree, because a single prediction can be traced through its split rules, which makes it easier to explain an estimated delivery time. An unrestricted tree fits the training orders too closely, so we search for the maximum depth and minimum leaf size that give the lowest validation MAE (@tbl-tuning). The best settings are then refitted on all training orders.
+
+```{python}
+#| label: tbl-tuning
+#| tbl-cap: The five decision tree settings with the lowest validation MAE.
+tree_search = GridSearchCV(
+    make_pipeline(preprocessor, DecisionTreeRegressor(random_state=0)),
+    param_grid={
+        "decisiontreeregressor__max_depth": [10, 15, 20, None],
+        "decisiontreeregressor__min_samples_leaf": [20, 40, 60, 100],
+    },
+    cv=validation,
+    scoring="neg_mean_absolute_error",
+    n_jobs=-1,
+)
+tree_search.fit(X_train, y_train)
+
+tuning = pd.DataFrame({
+    "Maximum depth": tree_search.cv_results_["param_decisiontreeregressor__max_depth"],
+    "Minimum leaf size": tree_search.cv_results_["param_decisiontreeregressor__min_samples_leaf"],
+    "Validation MAE (min)": -tree_search.cv_results_["mean_test_score"],
+})
+tuning.fillna({"Maximum depth": "Unlimited"}).nsmallest(5, "Validation MAE (min)").style.format(precision=2).hide()
+```
+
+## Results
+
+@tbl-test shows how each model performs on the test orders, which were not used for any of the choices above. The other models are refitted on all training orders so that every model has seen the same data. Only the decision tree was tuned, which gives it an advantage over the default SVR.
+
+```{python}
+#| label: tbl-test
+#| tbl-cap: Performance on the held-out test orders. R² is the proportion of the variation in delivery time that the model explains.
+from sklearn.metrics import mean_absolute_error, r2_score
+
+fitted = {name: make_pipeline(preprocessor, model).fit(X_train, y_train) for name, model in models.items()}
+fitted["Tuned decision tree"] = tree_search.best_estimator_
+
+test_scores = pd.DataFrame({
+    name: {"Test MAE (min)": mean_absolute_error(y_test, model.predict(X_test)),
+           "R²": r2_score(y_test, model.predict(X_test))}
+    for name, model in fitted.items()
+}).T
+test_scores.sort_values("Test MAE (min)").round(2)
+```
+
+To see which inputs the tuned tree relies on most, we shuffle one input at a time and measure how much the test MAE increases (permutation importance, @fig-importance). Inputs that are related to each other can share importance.
+
+```{python}
+#| label: fig-importance
+#| fig-cap: Increase in test MAE when each input is shuffled, for the eight most important inputs of the tuned decision tree (2,000 test orders).
+import matplotlib.pyplot as plt
+from sklearn.inspection import permutation_importance
+
+labels = {
+    "Age": "Courier age", "Rating": "Courier rating", "Vehicle_condition": "Vehicle condition",
+    "multiple_deliveries": "Multiple deliveries", "dist_km": "Distance", "order_hour": "Order hour",
+    "dow": "Day of the week", "Weatherconditions": "Weather", "Road_traffic_density": "Traffic density",
+    "Type_of_vehicle": "Vehicle type", "Type_of_order": "Order type", "Festival": "Festival",
+    "City": "Area type",
+}
+sample = X_test.sample(2000, random_state=0)
+importance = permutation_importance(tree_search.best_estimator_, sample, y_test[sample.index],
+                                    scoring="neg_mean_absolute_error", n_repeats=5, random_state=0)
+top = pd.Series(importance.importances_mean, index=features).rename(labels).nlargest(8).sort_values()
+
+fig, ax = plt.subplots(figsize=(7, 4))
+top.plot.barh(ax=ax)
+ax.set(xlabel="Increase in MAE after shuffling (min)", ylabel="")
+plt.show()
+```
