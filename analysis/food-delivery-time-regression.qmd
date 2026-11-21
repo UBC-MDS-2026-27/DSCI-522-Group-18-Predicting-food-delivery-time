@@ -566,3 +566,9 @@ Our analysis also had several limitations. The original source of the data is no
 Future analysis should be performed to study how our model performs on real, documented data collected over a longer period of time. Incorporating real-world travel distance rather than straight-line distance would also improve our model if feasible. Tuning other models, SVR or otherwise, could also show whether a more accurate model is worth losing the interpretability of a decision tree.
 
 # References
+
+1. Malik, G. (2022). Food Delivery Dataset. Kaggle. https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset
+2. Hildebrandt, F. D., & Ulmer, M. W. (2022). Supervised learning for arrival time estimations in restaurant meal delivery. Transportation Science, 56(4), 1058–1084. https://doi.org/10.1287/trsc.2021.1095
+3. Yalçinkaya, E., & Hızıroğlu, O. A. (2024). A comparative analysis of machine learning models for time prediction in food delivery operations. Artificial Intelligence Theory and Applications, 4(1), 43–56. https://dergipark.org.tr/en/pub/aita/article/1459560
+4. Gibas, J., Pomykacz, J., & Baranowski, J. (2024). Bayesian modeling of travel times on the example of food delivery: Part 1—Spatial data analysis and processing. Electronics, 13(17), 3387. https://doi.org/10.3390/electronics13173387
+5. Binaykiya, T., Hu, X., & Cirit, O. (2022). DeepETA: How Uber predicts arrival times using deep learning. Uber Engineering Blog. https://www.uber.com/en-US/blog/deepeta-how-uber-predicts-arrival-times/
