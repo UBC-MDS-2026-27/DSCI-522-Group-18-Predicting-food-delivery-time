@@ -78,6 +78,20 @@ raw_test = pd.read_csv(RAW_DIR / 'test.csv')
 
 ```
 
+### Inspecting the Data
+```{python}
+
+print("Original train shape:", raw_train.shape)
+print("Original test shape:", raw_test.shape)
+
+print("\nOriginal train columns:")
+print(raw_train.columns.tolist())
+
+print("\nOriginal test columns:")
+print(raw_test.columns.tolist())
+```
+
+The original idea here was to merge the given train and test sets if the shapes of the two dataframes were compatible. However, after inspection, we can see that the raw test dataset does not have the target variable of `Time_taken(min)`. Therefore, we will use the original training dataset as our complete labelled dataset and partition it into training and test sets for our analysis. 
 
 ### Clean the data
 
