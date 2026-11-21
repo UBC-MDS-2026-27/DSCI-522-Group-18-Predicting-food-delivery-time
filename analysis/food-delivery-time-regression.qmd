@@ -217,7 +217,7 @@ test_clean.to_csv(PROCESSED_DIR / "test.csv", index=False)
 
 ### Exploratory Data Analysis
 
-We conducted an explanatory data analysis using only the training data `train_clean` to investigate the distribution of delivery times and its relationships with the available features. In particular, we examined delivery distance, weather conditions, road traffic density and order hour since these variables are directly relevant to our research question. 
+We conducted an exploratory data analysis using only the training data `train_clean` to investigate the distribution of delivery times and its relationships with the available features. In particular, we examined delivery distance, weather conditions, road traffic density and order hour since these variables are directly relevant to our research question. 
 
 First, we summarized the numerical features and investigated for possible missing values. Then, we created visualizations from the data to identify potential patterns that we can use for the regression modelling. The test set was excluded from the analysis to avoid any data leakage.
 
@@ -251,7 +251,7 @@ train_clean[categorical_cols].astype("string").describe().T
 
 The cleaned training dataset contains 34,042 delivery observations with delivery times ranging from 10 to 54 minutes with mean of 26.24 minutes and standard deviation of 9.36 minutes. This showed substantial variation in delivery times. Additionally, we see straight line distances averaging 9.59km with observed distances ranging from 1.47km to 20.97km. 
 
-The categorical features show us that motorcycles are the most common delivery vehicle type with over 50% of deliveries made on motorcycles. Metropolitan areas account for over 75% of nonmissing city-category observations and only 2.0% of non-missing festival observations occur during festivals. We'll have to account for these imbalances during interpretation of the regression results, partijcularly for the less frequently observed delivery conditions. 
+The categorical features show us that motorcycles are the most common delivery vehicle type with over 50% of deliveries made on motorcycles. Metropolitan areas account for over 75% of nonmissing city-category observations and only 2.0% of non-missing festival observations occur during festivals. We'll have to account for these imbalances during interpretation of the regression results, particularly for the less frequently observed delivery conditions. 
 
 ```{python}
 #| label: tbl-missing-values
@@ -264,7 +264,7 @@ missing_summary = pd.DataFrame({
 
 missing_summary.sort_values("Missing Count", ascending=False).round(2)
 ```
-We see from this table that `dist_km` has the highest proportion of missing observations (8.54%) followed by `Rating` (4.36%), `Age` (4.07%) and `order_hour` (3.85%). All remaining predictors have less than 3% missing values. Since all predictors have a relatively low proportion of missing observations, we'll retain these features for regression modelling. However, the missing numerical and categorical values will be imputed within the modelling pipeline.
+We see from this table that the striaght line distance has the highest proportion of missing observations (8.54%) followed by rating (4.36%), age (4.07%) and order hour (3.85%). All remaining predictors have less than 3% missing values. Since all predictors have a relatively low proportion of missing observations, we'll retain these features for regression modelling. However, the missing numerical and categorical values will be imputed within the modelling pipeline.
 
 We'll start by examining the distribution of recorded delivery times in the training dataset. 
 
@@ -290,7 +290,7 @@ delivery_distribution = (
 delivery_distribution
 ```
 
-This figure shows the distribution of delivery times in the training dataset. With delivery times ranging from 10 to 54 minutes, it seems to be right-skewed with the greatest concentration of boservations occurring between 24 and 30 minutes. The distribution progressively has far fewer deliveries taking longer than 30 minutes. However, from the numerical summaries above, we see that the mean 26.24 minutes is quite similar to the median of 26 minutes, which suggests limited overall skewness. 
+This figure shows the distribution of delivery times in the training dataset. With delivery times ranging from 10 to 54 minutes, it seems to be right-skewed with the greatest concentration of observations occurring between 24 and 30 minutes. The distribution progressively has far fewer deliveries taking longer than 30 minutes. However, from the numerical summaries above, we see that the mean 26.24 minutes is quite similar to the median of 26 minutes, which suggests limited overall skewness. 
 
 ```{python}
 #| label: fig-distance-time
@@ -316,7 +316,7 @@ distance_plot = (scatter + regression_line).properties(width=650, height=350, ti
 distance_plot
 ```
 
-Figure 2 shows a positive association between straight-line delivery distance and delivery time, as we can see from the upward-sloping regression line. However, we also see substantial variation in delivery times at similar distances which suggests that distance alone can't fully explain delivery time. The distances shown in the plot also exhibit distinct vertical clusters which potentially reflect systematic increments in the recorded geographic coordinates. This might indicate that other factors may provide more predictive information. 
+Figure 2 shows a positive association between straight-line delivery distance and delivery time, as we can see from the upward-sloping regression line. However, we also see substantial variation in delivery times at similar distances which suggests that distance alone can't fully explain delivery time. The distances shown in the plot also exhibit distinct vertical clusters which potentially reflect systematic increments in the recorded geographic coordinates. 
 
 ```{python}
 #| label: fig-traffic-time
@@ -344,7 +344,7 @@ traffic_plot = alt.Chart(traffic_summary).mark_bar().encode(
 
 traffic_plot
 ```
-Figure 3 shows a positive association between road traffic density and delivery time. The media  delivery time increases from 20 minutes under low traffic to 31 minutes during traffic jams which is a difference of 11 minutes. Additionally, we also see that under medium and high traffic conditions, the median delivery times are about the same at 26 and 27 minutes, respectively. The differences show here suggest that traffic density could be an important predictor of delivery time. 
+Figure 3 shows a positive association between road traffic density and delivery time. The median delivery time increases from 20 minutes under low traffic to 31 minutes during traffic jams which is a difference of 11 minutes. Additionally, we also see that under medium and high traffic conditions, the median delivery times are about the same at 26 and 27 minutes, respectively. The differences show here suggest that traffic density could be an important predictor of delivery time. 
 
 ```{python}
 #| label: fig-weather-time
@@ -368,7 +368,7 @@ weather_plot = alt.Chart(weather_summary).mark_bar().encode(
 weather_plot
 ```
 
-Figure 4 shows us differences in the median delivery times under different weather conditions. We can see that sunny weather conditions have the shortest median delivery time at 20 minutes, while cloudy and foggy weather have the longest times at 28 minutes. Sandstorms, stormy weather and windy weather all have median delivery times of 26 minutes. Thus, the groupings suggest that different weather categories are associated with noticeably different typical delivery times. However, in each of the three groupings within this plot, we can see that the similar medians within each gorup can suggest that some weather conditons can provide comparable predictive information. Therefore, making weather another potentially useful predictor for delivery time. 
+Figure 4 shows us differences in the median delivery times under different weather conditions. We can see that sunny weather conditions have the shortest median delivery time at 20 minutes, while cloudy and foggy weather have the longest times at 28 minutes. Sandstorms, stormy weather and windy weather all have median delivery times of 26 minutes. Thus, the groupings suggest that different weather categories are associated with noticeably different typical delivery times. However, in each of the three groupings within this plot, we can see that the similar medians within each group can suggest that some weather conditons can provide comparable predictive information. Therefore, making weather another potentially useful predictor for delivery time. 
 
 ```{python}
 #| label: fig-order-hour
@@ -393,7 +393,7 @@ hour_plot = alt.Chart(hour_summary).mark_line(point=True).encode(
 hour_plot
 ```
 
-Figure 5 shows the median delivery times varying considerably depending on the hour the delivery was ordered. The longest median delivery time occur during the evening hours, especially between 19:00 and 21:00 which peaks at 20:00 with a delivery time of 31 minutes. The sharpest increase also happens from the hours 11:00 to 14:00, when the median delivery times range from 27-28 minutes. These periods may very well concincide with the typical dinner and lunch hours which suggests that there's increased demand of food delivery and may contribute to longer delivery times. In contrast, the orders placed between 8:00 and 10:00 have a median delivery time of 19 minutes. The noticeable differences across hours suggest that the timing of the order could be an important predictor of delivery time. 
+Figure 5 shows the median delivery times varying considerably depending on the hour the delivery was ordered. The longest median delivery time occur during the evening hours, especially between 19:00 and 21:00 which peaks at 20:00 with a delivery time of 31 minutes. The sharpest increase also happens from the hours 11:00 to 14:00, when the median delivery times range from 27-28 minutes. These periods may very well coincide with the typical dinner and lunch hours which suggests that there's increased demand of food delivery and may contribute to longer delivery times. In contrast, the orders placed between 8:00 and 10:00 have a median delivery time of 19 minutes. The noticeable differences across hours suggest that the timing of the order could be an important predictor of delivery time. 
 
 ```{python}
 #| label: fig-order-type
