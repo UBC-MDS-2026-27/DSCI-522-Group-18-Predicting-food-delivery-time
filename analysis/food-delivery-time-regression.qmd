@@ -178,6 +178,7 @@ def clean_data(data):
 
     df["Age"] = pd.to_numeric(df["Delivery_person_Age"])
     df["Rating"] = pd.to_numeric(df["Delivery_person_Ratings"])
+    df['Rating'] = df['Rating'].where(df['Rating'].between(1,5))
     df["multiple_deliveries"] = pd.to_numeric(df["multiple_deliveries"])
     df['Vehicle_condition'] = pd.to_numeric(df['Vehicle_condition'])
 
@@ -215,6 +216,53 @@ train_clean.to_csv(PROCESSED_DIR / "train.csv", index=False)
 test_clean.to_csv(PROCESSED_DIR / "test.csv", index=False)
 
 ```
+
+### Exploratory Data Analysis
+
+We conducted an explanatory data analysis using only the training data `train_clean` to investigate the distribution of delivery times and its relationships with the available features. In particular, we examined delivery distance, weather conditions, road traffic density and order hour since these variables are directly relevant to our research question. 
+
+First, we summarized the numerical features and investigated for possible missing values. Then, we created visualizations from the data to identify potential patterns that we can use for the regression modelling. The test set was excluded from the analysis to avoid any data leakage.
+
+```{python}
+#| label: tbl-training-summary
+#| tbl-cap: Summary statistics for selected numerical variables in the training dataset.
+
+numeric_cols = ['target', 'dist_km', 'Age', 'Rating', 'order_hour', 'multiple_deliveries']
+
+numeric_summary = train_clean[numeric_cols].describe().T
+
+numeric_summary.round(2)
+```
+```{python}
+#| label: tbl-categorical-summary
+#| tbl-cap: Summary of categorical variables in the training dataset.
+
+categorical_cols = [
+    "Vehicle_condition",
+    "Type_of_vehicle",
+    "Weatherconditions",
+    "Road_traffic_density",
+    "Type_of_order",
+    "Festival",
+    "City",
+    "dow"
+]
+
+train_clean[categorical_cols].astype("string").describe().T
+```
+
+```{python}
+#| label: tbl-missing-values
+#| tbl-cap: Missing values in the processed training dataset.
+
+missing_summary = pd.DataFrame({
+    "Missing Count": train_clean.isna().sum(),
+    "Missing (%)": train_clean.isna().mean() * 100
+})
+
+missing_summary.sort_values("Missing Count", ascending=False).round(2)
+```
+We see from this table that `dist_km` has the highest proportion of missing observations (8.54%) followed by `Rating` (4.36%), `Age` (4.07%) and `order_hour` (3.85%). All remaining predictors have less than 3% missing values. Since all predictors have a relatively low proportion of missing observations, we'll retain these features for regression modelling. However, the missing numerical and categorical values will be imputed within the modelling pipeline.
 
 ## Models
 
