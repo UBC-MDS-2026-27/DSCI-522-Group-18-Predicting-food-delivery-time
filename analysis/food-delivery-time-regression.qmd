@@ -240,8 +240,8 @@ categorical_cols = ["Weatherconditions", "Road_traffic_density", "Type_of_vehicl
                     "Festival", "City"]
 features = numeric_cols + categorical_cols
 
-model_train = drop_impossible(train_df)
-model_test = drop_impossible(test_df)
+model_train = drop_impossible(train_clean)
+model_test = drop_impossible(test_clean)
 X_train, y_train = model_train[features], model_train["target"]
 X_test, y_test = model_test[features], model_test["target"]
 
@@ -273,7 +273,7 @@ validation_mae = {
 pd.DataFrame({"Validation MAE (min)": validation_mae}).round(2)
 ```
 
-The default SVR has a lower validation error than the default decision tree. We still choose to tune the decision tree, because a single prediction can be traced through its split rules, which makes it easier to explain an estimated delivery time. An unrestricted tree fits the training orders too closely, so we search for the maximum depth and minimum leaf size that give the lowest validation MAE (@tbl-tuning). The best settings are then refitted on all training orders.
+Both non-linear models improve on the baseline. We choose to tune the decision tree rather than SVR because a single prediction can be traced through its split rules, which makes it easier to explain an estimated delivery time. An unrestricted tree fits the training orders too closely, so we search for the maximum depth and minimum leaf size that give the lowest validation MAE (@tbl-tuning). The best settings are then refitted on all training orders.
 
 ```{python}
 #| label: tbl-tuning
@@ -300,7 +300,7 @@ tuning.fillna({"Maximum depth": "Unlimited"}).nsmallest(5, "Validation MAE (min)
 
 # Results
 
-@tbl-test shows how each model performs on the test orders, which were not used for any of the choices above. The other models are refitted on all training orders so that every model has seen the same data. Only the decision tree was tuned, which gives it an advantage over the default SVR.
+@tbl-test shows how each model performs on the test orders, which were not used for any of the choices above. The other models are refitted on all training orders so that every model has seen the same data. Only the decision tree was tuned, which gives it an advantage over the other models.
 
 ```{python}
 #| label: tbl-test
