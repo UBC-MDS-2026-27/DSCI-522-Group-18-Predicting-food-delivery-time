@@ -13,13 +13,11 @@ import requests
 import zipfile
 import altair as alt
 from sklearn import set_config
-from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
 from sklearn.compose import make_column_transformer, make_column_selector
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import fbeta_score, make_scorer, accuracy_score
+
 
 # png, so the charts also show in the PDF
 _ = alt.renderers.enable("png", scale_factor=2)
@@ -178,6 +176,7 @@ def clean_data(data):
 
     df["Age"] = pd.to_numeric(df["Delivery_person_Age"])
     df["Rating"] = pd.to_numeric(df["Delivery_person_Ratings"])
+    df['Rating'] = df['Rating'].where(df['Rating'].between(1,5))
     df["multiple_deliveries"] = pd.to_numeric(df["multiple_deliveries"])
     df['Vehicle_condition'] = pd.to_numeric(df['Vehicle_condition'])
 
@@ -215,6 +214,211 @@ train_clean.to_csv(PROCESSED_DIR / "train.csv", index=False)
 test_clean.to_csv(PROCESSED_DIR / "test.csv", index=False)
 
 ```
+
+### Exploratory Data Analysis
+
+We conducted an exploratory data analysis using only the training data `train_clean` to investigate the distribution of delivery times and its relationships with the available features. In particular, we examined delivery distance, weather conditions, road traffic density and order hour since these variables are directly relevant to our research question. 
+
+First, we summarized the numerical features and investigated for possible missing values. Then, we created visualizations from the data to identify potential patterns that we can use for the regression modelling. The test set was excluded from the analysis to avoid any data leakage.
+
+```{python}
+#| label: tbl-training-summary
+#| tbl-cap: Summary statistics for selected numerical variables in the training dataset.
+
+numeric_cols = ['target', 'dist_km', 'Age', 'Rating', 'order_hour', 'multiple_deliveries']
+
+numeric_summary = train_clean[numeric_cols].describe().T
+
+numeric_summary.round(2)
+```
+```{python}
+#| label: tbl-categorical-summary
+#| tbl-cap: Summary of categorical variables in the training dataset.
+
+categorical_cols = [
+    "Vehicle_condition",
+    "Type_of_vehicle",
+    "Weatherconditions",
+    "Road_traffic_density",
+    "Type_of_order",
+    "Festival",
+    "City",
+    "dow"
+]
+
+train_clean[categorical_cols].astype("string").describe().T
+```
+
+The cleaned training dataset contains 34,042 delivery observations with delivery times ranging from 10 to 54 minutes with mean of 26.24 minutes and standard deviation of 9.36 minutes. This showed substantial variation in delivery times. Additionally, we see straight line distances averaging 9.59km with observed distances ranging from 1.47km to 20.97km. 
+
+The categorical features show us that motorcycles are the most common delivery vehicle type with over 50% of deliveries made on motorcycles. Metropolitan areas account for over 75% of nonmissing city-category observations and only 2.0% of non-missing festival observations occur during festivals. We'll have to account for these imbalances during interpretation of the regression results, particularly for the less frequently observed delivery conditions. 
+
+```{python}
+#| label: tbl-missing-values
+#| tbl-cap: Missing values in the processed training dataset.
+
+missing_summary = pd.DataFrame({
+    "Missing Count": train_clean.isna().sum(),
+    "Missing (%)": train_clean.isna().mean() * 100
+})
+
+missing_summary.sort_values("Missing Count", ascending=False).round(2)
+```
+We see from this table that the striaght line distance has the highest proportion of missing observations (8.54%) followed by rating (4.36%), age (4.07%) and order hour (3.85%). All remaining predictors have less than 3% missing values. Since all predictors have a relatively low proportion of missing observations, we'll retain these features for regression modelling. However, the missing numerical and categorical values will be imputed within the modelling pipeline.
+
+We'll start by examining the distribution of recorded delivery times in the training dataset. 
+
+```{python}
+#| label: fig-delivery-distribution
+#| fig-cap: "Distribution of delivery times in the training dataset."
+
+# Count orders at each recorded delivery time
+delivery_counts = (
+    train_clean["target"]
+    .value_counts()
+    .rename_axis("delivery_time")
+    .reset_index(name="count")
+)
+
+delivery_distribution = (
+    alt.Chart(delivery_counts).mark_bar().encode(
+        x=alt.X("delivery_time:Q",bin=alt.Bin(step=2),title="Delivery time (minutes)",axis=alt.Axis(values=list(range(10, 55, 5)),format=".0f")),
+        y=alt.Y("sum(count):Q",title="Number of orders")
+    ).properties(width=650, height=350, title="Distribution of Delivery Times")
+)
+
+delivery_distribution
+```
+
+This figure shows the distribution of delivery times in the training dataset. With delivery times ranging from 10 to 54 minutes, it seems to be right-skewed with the greatest concentration of observations occurring between 24 and 30 minutes. The distribution progressively has far fewer deliveries taking longer than 30 minutes. However, from the numerical summaries above, we see that the mean 26.24 minutes is quite similar to the median of 26 minutes, which suggests limited overall skewness. 
+
+```{python}
+#| label: fig-distance-time
+#| fig-cap: "Relationship between straight-line delivery distance and delivery time, using a sample of training observations."
+
+distance_data = train_clean[["dist_km", "target"]].dropna()
+
+distance_sample = distance_data.sample(n=min(3000, len(distance_data)), random_state=522)
+
+scatter = alt.Chart(distance_sample).mark_circle(opacity=0.25, size=35).encode(
+    x=alt.X("dist_km:Q", title="Straight-line delivery distance (km)", scale=alt.Scale(zero=False)),
+    y=alt.Y("target:Q", title="Delivery time (minutes)", scale=alt.Scale(zero=False)),
+    tooltip=[
+        alt.Tooltip("dist_km:Q", format=".2f", title="Distance (km)"),
+        alt.Tooltip("target:Q", format=".0f", title="Delivery time (min)")
+    ]
+)
+
+regression_line = alt.Chart(distance_sample).transform_regression("dist_km","target").mark_line(color="red", size=3).encode(x="dist_km:Q",y="target:Q")
+
+distance_plot = (scatter + regression_line).properties(width=650, height=350, title="Delivery Distance vs. Delivery Time")
+
+distance_plot
+```
+
+Figure 2 shows a positive association between straight-line delivery distance and delivery time, as we can see from the upward-sloping regression line. However, we also see substantial variation in delivery times at similar distances which suggests that distance alone can't fully explain delivery time. The distances shown in the plot also exhibit distinct vertical clusters which potentially reflect systematic increments in the recorded geographic coordinates. 
+
+```{python}
+#| label: fig-traffic-time
+#| fig-cap: "Median delivery time by road traffic density in the training dataset."
+
+# Calculate median delivery time for each traffic category
+traffic_summary = (
+    train_clean
+    .groupby("Road_traffic_density")["target"]
+    .agg(["median", "count"])
+    .reset_index()
+)
+
+# Plot median delivery time by traffic density
+traffic_plot = alt.Chart(traffic_summary).mark_bar().encode(
+    x=alt.X("Road_traffic_density:N", sort=["Low", "Medium", "High", "Jam"], title="Road traffic density"),
+    y=alt.Y("median:Q", title="Median delivery time (minutes)"),
+    tooltip=[
+        alt.Tooltip("Road_traffic_density:N", title="Traffic density"),
+        alt.Tooltip("median:Q", title="Median delivery time", format=".1f"),
+        alt.Tooltip("count:Q", title="Number of orders")
+    ]
+).properties(width=650, height=350, title="Delivery Time by Traffic Density")
+
+
+traffic_plot
+```
+Figure 3 shows a positive association between road traffic density and delivery time. The median delivery time increases from 20 minutes under low traffic to 31 minutes during traffic jams which is a difference of 11 minutes. Additionally, we also see that under medium and high traffic conditions, the median delivery times are about the same at 26 and 27 minutes, respectively. The differences show here suggest that traffic density could be an important predictor of delivery time. 
+
+```{python}
+#| label: fig-weather-time
+#| fig-cap: "Median delivery time by weather condition in the training dataset."
+
+# Calculate median delivery time for each weather condition
+weather_summary = train_clean.groupby("Weatherconditions")["target"].agg(["median", "count"]).reset_index()
+
+# Plot median delivery time by weather condition
+weather_plot = alt.Chart(weather_summary).mark_bar().encode(
+    x=alt.X("Weatherconditions:N", sort=alt.SortField(field="median", order="descending"), title="Weather conditions", axis=alt.Axis(labelAngle=-30)),
+    y=alt.Y("median:Q", title="Median delivery time (minutes)"),
+    tooltip=[
+        alt.Tooltip("Weatherconditions:N", title="Weather condition" ),
+        alt.Tooltip("median:Q", title="Median delivery time", format=".1f"),
+        alt.Tooltip("count:Q",title="Number of orders")
+    ]
+).properties(width=650, height=350, title="Delivery Time by Weather Conditions")
+
+
+weather_plot
+```
+
+Figure 4 shows us differences in the median delivery times under different weather conditions. We can see that sunny weather conditions have the shortest median delivery time at 20 minutes, while cloudy and foggy weather have the longest times at 28 minutes. Sandstorms, stormy weather and windy weather all have median delivery times of 26 minutes. Thus, the groupings suggest that different weather categories are associated with noticeably different typical delivery times. However, in each of the three groupings within this plot, we can see that the similar medians within each group can suggest that some weather conditons can provide comparable predictive information. Therefore, making weather another potentially useful predictor for delivery time. 
+
+```{python}
+#| label: fig-order-hour
+#| fig-cap: "Median delivery time by hour of order placement in the training dataset."
+
+# Calculate median delivery time and order count by hour
+hour_summary = train_clean.groupby("order_hour")["target"].agg(["median", "count"]).reset_index()
+
+
+# Plot median delivery time by order hour
+hour_plot = alt.Chart(hour_summary).mark_line(point=True).encode(
+    x=alt.X("order_hour:Q", title="Hour of order placement (24-hour clock)", axis=alt.Axis(values=list(range(0, 24, 2))), scale=alt.Scale(domain=[0, 23])),
+    y=alt.Y("median:Q", title="Median delivery time (minutes)", scale=alt.Scale(zero=False)),
+    tooltip=[
+        alt.Tooltip("order_hour:Q", title="Order hour", format=".0f"),
+        alt.Tooltip("median:Q", title="Median delivery time", format=".1f"),
+        alt.Tooltip("count:Q", title="Number of orders")
+    ]
+).properties(width=650, height=350, title="Median Delivery Time by Order Hour")
+
+
+hour_plot
+```
+
+Figure 5 shows the median delivery times varying considerably depending on the hour the delivery was ordered. The longest median delivery time occur during the evening hours, especially between 19:00 and 21:00 which peaks at 20:00 with a delivery time of 31 minutes. The sharpest increase also happens from the hours 11:00 to 14:00, when the median delivery times range from 27-28 minutes. These periods may very well coincide with the typical dinner and lunch hours which suggests that there's increased demand of food delivery and may contribute to longer delivery times. In contrast, the orders placed between 8:00 and 10:00 have a median delivery time of 19 minutes. The noticeable differences across hours suggest that the timing of the order could be an important predictor of delivery time. 
+
+```{python}
+#| label: fig-order-type
+#| fig-cap: "Median delivery time by order type in the training dataset."
+
+# Calculate median delivery time and order count by order type
+order_summary = train_clean.groupby("Type_of_order")["target"].agg(["median", "count"]).reset_index()
+
+
+# Plot median delivery time by order type
+order_plot = alt.Chart(order_summary).mark_bar().encode(
+    x=alt.X("Type_of_order:N", sort=alt.SortField(field="median", order="descending"), title="Order type", axis=alt.Axis(labelAngle=0)),
+    y=alt.Y("median:Q", title="Median delivery time (minutes)"),
+    tooltip=[
+        alt.Tooltip("Type_of_order:N", title="Order type"),
+        alt.Tooltip("median:Q", title="Median delivery time", format=".1f"),
+        alt.Tooltip("count:Q", title="Number of orders")
+    ]
+).properties(width=650, height=350, title="Delivery Time by Order Type")
+
+
+order_plot
+```
+
+Figure 6 shows the median delivery times across different order types, but they're relatively consistent. The median delivery times of buffets and meals are 26 minutes which is not that much different from the median delivery times of drinks and snacks which are 25 minutes. The very small difference of 1 minute seems to suggest that order type may have a weaker association with delivery time compared to other external factors such as traffic density and weather conditions which we have seen to show larger differences in median delivery times. 
 
 ## Models
 
