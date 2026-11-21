@@ -25,11 +25,15 @@ _ = alt.renderers.enable("png", scale_factor=2)
 
 # Summary
 
+This project investigates whether food delivery times can be predicted using order characteristics and external conditions, including traffic density, weather, and time of day. Using the Food Delivery Dataset published by Gaurav Malik [1], we develop and compare regression models to predict recorded delivery durations in minutes. Model performance is evaluated primarily using mean absolute error (MAE), which expresses prediction error in minutes. The best-performing model was a tuned decision tree (maximum depth 15, minimum leaf size 40), which achieved a test MAE of 3.37 minutes and an R² of 0.80, compared to a linear regression baseline with an MAE of 4.77 minutes and an R² of 0.60. Permutation importance showed that the model relied most on weather and traffic density, followed by distance and courier rating. These findings may help improve delivery-time estimation, although limitations in the dataset and the observational nature of the analysis restrict their generalizability. A delivery app user at home should also expect longer waits during traffic jams and in cloudy or foggy weather.
 
 # Introduction
 
+Online food delivery services rely on accurate delivery-time estimates to manage customer expectations and improve operational efficiency. However, delivery times can vary considerably depending on factors such as travel distance, traffic congestion, weather conditions, and order timing. Previous research has explored machine learning approaches for estimating food delivery arrival times, demonstrating their potential to improve prediction accuracy and support delivery operations [2, 3].
 
+This project aims to answer the following research question: To what extent can food delivery times be predicted using order characteristics, delivery conditions, and external factors such as traffic, weather, and time of day? In addition to evaluating predictive performance, we investigate which recorded factors are most strongly associated with variation in delivery times. Understanding these relationships may provide insights into the conditions under which deliveries tend to take longer, although these associations do not necessarily imply causation.
 
+To investigate this question, we use the Food Delivery Dataset published by Gaurav Malik on Kaggle [1]. Each observation represents an individual food delivery and contains information about the order, delivery personnel, geographic locations, weather, traffic conditions, and other delivery characteristics. Our response variable is the recorded delivery time, measured in minutes. Candidate predictors include the type of order, order time, distance between the restaurant and delivery location, road traffic density, and weather conditions. We use supervised regression methods to predict delivery duration and evaluate their performance on later, held-out observations.
 
 # Methods
 
@@ -37,7 +41,7 @@ _ = alt.renderers.enable("png", scale_factor=2)
 
 The dataset used in this project is version 1 of the "Food Delivery Dataset" published by Gaurav Malik on Kaggle [1]. This dataset contains individual food delivery records which contain information about delivery personnel, order characteristics, geographic conditions, weather conditions, and road traffic density.
 
-Each row in this dataset represents a single food delivery order, and the response variable is the recorded delivery during in minutes (`Time_taken(min)`).
+Each row in this dataset represents a single food delivery order, and the response variable is the recorded delivery duration in minutes (`Time_taken(min)`).
 
 We use these observations to investigate whether delivery times can be predicted accurately from the characteristics of the food orders along with external conditions. The original dataset can be found [here](https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset).
 
@@ -115,7 +119,7 @@ print("Number of unique dates:", order_dates.nunique())
 print("Missing dates:", order_dates.isna().sum())
 ```
 
-Before any exploration, we hold out the last 11 days of orders (25%) (from March 27, 2022) as the test set. Splitting by date rather than at random means the model is evaluated on orders placed after every order it learned from, as it would be when used in practice. The test set is not used again until the final evaluation.
+Before any exploration, we hold out the last 11 days of orders (25% of data) (from March 27, 2022) as the test set. Splitting by date rather than at random means the model is evaluated on orders placed after every order it learned from, as it would be when used in practice. The test set is not used again until the final evaluation.
 
 
 ```{python}
@@ -249,9 +253,9 @@ categorical_cols = [
 train_clean[categorical_cols].astype("string").describe().T
 ```
 
-The cleaned training dataset contains 34,042 delivery observations with delivery times ranging from 10 to 54 minutes with mean of 26.24 minutes and standard deviation of 9.36 minutes. This showed substantial variation in delivery times. Additionally, we see straight line distances averaging 9.59km with observed distances ranging from 1.47km to 20.97km. 
+The cleaned training dataset contains 34,042 delivery observations with delivery times ranging from 10 to 54 minutes with a mean of 26.24 minutes and standard deviation of 9.36 minutes. This showed substantial variation in delivery times. Additionally, we see straight-line distances averaging 9.59 km with observed distances ranging from 1.47 km to 20.97 km. 
 
-The categorical features show us that motorcycles are the most common delivery vehicle type with over 50% of deliveries made on motorcycles. Metropolitan areas account for over 75% of nonmissing city-category observations and only 2.0% of non-missing festival observations occur during festivals. We'll have to account for these imbalances during interpretation of the regression results, particularly for the less frequently observed delivery conditions. 
+The categorical features show us that motorcycles are the most common delivery vehicle type with over 50% of deliveries made on motorcycles. Metropolitan areas account for over 75% of non-missing city-category observations and only 2.0% of non-missing festival observations occur during festivals. We'll have to account for these imbalances during interpretation of the regression results, particularly for the less frequently observed delivery conditions. 
 
 ```{python}
 #| label: tbl-missing-values
@@ -264,7 +268,7 @@ missing_summary = pd.DataFrame({
 
 missing_summary.sort_values("Missing Count", ascending=False).round(2)
 ```
-We see from this table that the striaght line distance has the highest proportion of missing observations (8.54%) followed by rating (4.36%), age (4.07%) and order hour (3.85%). All remaining predictors have less than 3% missing values. Since all predictors have a relatively low proportion of missing observations, we'll retain these features for regression modelling. However, the missing numerical and categorical values will be imputed within the modelling pipeline.
+We see from this table that the straight-line distance has the highest proportion of missing observations (8.54%) followed by rating (4.36%), age (4.07%) and order hour (3.85%). All remaining predictors have less than 3% missing values. Since all predictors have a relatively low proportion of missing observations, we'll retain these features for regression modelling. However, the missing numerical and categorical values will be imputed within the modelling pipeline.
 
 We'll start by examining the distribution of recorded delivery times in the training dataset. 
 
@@ -344,7 +348,7 @@ traffic_plot = alt.Chart(traffic_summary).mark_bar().encode(
 
 traffic_plot
 ```
-Figure 3 shows a positive association between road traffic density and delivery time. The median delivery time increases from 20 minutes under low traffic to 31 minutes during traffic jams which is a difference of 11 minutes. Additionally, we also see that under medium and high traffic conditions, the median delivery times are about the same at 26 and 27 minutes, respectively. The differences show here suggest that traffic density could be an important predictor of delivery time. 
+Figure 3 shows a positive association between road traffic density and delivery time. The median delivery time increases from 20 minutes under low traffic to 31 minutes during traffic jams which is a difference of 11 minutes. Additionally, we also see that under medium and high traffic conditions, the median delivery times are about the same at 26 and 27 minutes, respectively. The differences shown here suggest that traffic density could be an important predictor of delivery time. 
 
 ```{python}
 #| label: fig-weather-time
@@ -368,7 +372,7 @@ weather_plot = alt.Chart(weather_summary).mark_bar().encode(
 weather_plot
 ```
 
-Figure 4 shows us differences in the median delivery times under different weather conditions. We can see that sunny weather conditions have the shortest median delivery time at 20 minutes, while cloudy and foggy weather have the longest times at 28 minutes. Sandstorms, stormy weather and windy weather all have median delivery times of 26 minutes. Thus, the groupings suggest that different weather categories are associated with noticeably different typical delivery times. However, in each of the three groupings within this plot, we can see that the similar medians within each group can suggest that some weather conditons can provide comparable predictive information. Therefore, making weather another potentially useful predictor for delivery time. 
+Figure 4 shows us differences in the median delivery times under different weather conditions. We can see that sunny weather conditions have the shortest median delivery time at 20 minutes, while cloudy and foggy weather have the longest times at 28 minutes. Sandstorms, stormy weather and windy weather all have median delivery times of 26 minutes. Thus, the groupings suggest that different weather categories are associated with noticeably different typical delivery times. However, in each of the three groupings within this plot, we can see that the similar medians within each group can suggest that some weather conditions can provide comparable predictive information. This makes weather another potentially useful predictor of delivery time. 
 
 ```{python}
 #| label: fig-order-hour
@@ -393,7 +397,7 @@ hour_plot = alt.Chart(hour_summary).mark_line(point=True).encode(
 hour_plot
 ```
 
-Figure 5 shows the median delivery times varying considerably depending on the hour the delivery was ordered. The longest median delivery time occur during the evening hours, especially between 19:00 and 21:00 which peaks at 20:00 with a delivery time of 31 minutes. The sharpest increase also happens from the hours 11:00 to 14:00, when the median delivery times range from 27-28 minutes. These periods may very well coincide with the typical dinner and lunch hours which suggests that there's increased demand of food delivery and may contribute to longer delivery times. In contrast, the orders placed between 8:00 and 10:00 have a median delivery time of 19 minutes. The noticeable differences across hours suggest that the timing of the order could be an important predictor of delivery time. 
+Figure 5 shows the median delivery times varying considerably depending on the hour the delivery was ordered. The longest median delivery times occur during the evening hours, especially between 19:00 and 21:00 which peaks at 20:00 with a delivery time of 31 minutes. The sharpest increase also happens from the hours 11:00 to 14:00, when the median delivery times range from 27-28 minutes. These periods may very well coincide with the typical dinner and lunch hours which suggests that there's increased demand for food delivery and may contribute to longer delivery times. In contrast, the orders placed between 8:00 and 10:00 have a median delivery time of 19 minutes. The noticeable differences across hours suggest that the timing of the order could be an important predictor of delivery time. 
 
 ```{python}
 #| label: fig-order-type
@@ -549,6 +553,22 @@ ax.set(xlabel="Increase in MAE after shuffling (min)", ylabel="")
 plt.show()
 ```
 
+# Discussion
 
+We started this project to examine how well food delivery times can be predicted from their order details and external conditions. Our tuned decision tree shows that they can be predicted fairly well, as it predicted delivery times for later, unseen orders with an MAE of 3.37 minutes and an R² of 0.80. It outperformed a linear regression baseline, which had an MAE of 4.77 minutes and an R² of 0.60.
+
+Our modelling produced several findings that matched what we expected after performing exploratory data analysis. Weather, traffic density, and distance all exhibited clear differences in median delivery time and these were the three most important inputs as measured by permutation importance. However, we also encountered an unexpected result. Median delivery time varied heavily with the hour of order placement, yet it was the least important of the eight inputs shown in the permutation importance figure. This could be because the busiest hours for orders likely coincide with heavier traffic, meaning that the hour of the order provides limited information once traffic density is known.
+
+Transferring our findings to the real-world context of food delivery orders, our model gives us reason to believe that delivery platforms could improve their time estimates by adjusting for the current weather conditions and traffic, rather than relying mainly on distance. It is possible that more accurate estimates could increase the satisfaction of an ordering customer and reduce complaints and order cancellations. It may also lead to delivery drivers receiving more tips as there would be fewer instances of deliveries taking longer than predicted. There may also be an opportunity for the delivery platforms to use weather and traffic density to optimize courier assignments and pay during periods of inclement weather or heavy traffic. For example, a delivery service with close ties to a ride-hailing service, such as Uber and Uber Eats, may be able to draw from each other's operations to improve estimated arrival times across both apps [5].
+
+Our analysis also had several limitations. The original source of the data is not documented, meaning the data could be partially or fully synthetic and therefore unreflective of real-world deliveries. The data is also limited to only about two months in 2022, so the model has not had the opportunity to adjust for seasonal changes or long-term trends. We were also limited to using straight-line distance for each order, which does not fully capture the real-world distance a courier must traverse to deliver an order [4]. Since we chose a decision tree rather than SVR for interpretability despite the SVR model scoring better on validation data, we only tuned a decision tree. It is possible that tuning an SVR model could have led to results that were strong enough to override the decision tree's interpretability. Finally, permutation importance shows which inputs the model relies on rather than what causes deliveries to take longer. Related inputs like order hour and traffic density can share importance with each other.
+
+Future analysis should be performed to study how our model performs on real, documented data collected over a longer period of time. Incorporating real-world travel distance rather than straight-line distance would also improve our model if feasible. Tuning other models, SVR or otherwise, could also show whether a more accurate model is worth losing the interpretability of a decision tree.
 
 # References
+
+1. Malik, G. (2022). Food Delivery Dataset. Kaggle. https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset
+2. Hildebrandt, F. D., & Ulmer, M. W. (2022). Supervised learning for arrival time estimations in restaurant meal delivery. Transportation Science, 56(4), 1058–1084. https://doi.org/10.1287/trsc.2021.1095
+3. Yalçinkaya, E., & Hızıroğlu, O. A. (2024). A comparative analysis of machine learning models for time prediction in food delivery operations. Artificial Intelligence Theory and Applications, 4(1), 43–56. https://dergipark.org.tr/en/pub/aita/article/1459560
+4. Gibas, J., Pomykacz, J., & Baranowski, J. (2024). Bayesian modeling of travel times on the example of food delivery: Part 1—Spatial data analysis and processing. Electronics, 13(17), 3387. https://doi.org/10.3390/electronics13173387
+5. Binaykiya, T., Hu, X., & Cirit, O. (2022). DeepETA: How Uber predicts arrival times using deep learning. Uber Engineering Blog. https://www.uber.com/en-US/blog/deepeta-how-uber-predicts-arrival-times/
