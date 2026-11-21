@@ -145,7 +145,7 @@ print(f"Test set: {len(test_df):,} orders ({test_df['Order_Date'].min():%b %d} t
 ### Clean the data
 The training and test datasets were both cleaned separately using the same transformations. We standardized formats, derived straight-line delivery distance, and removed duplicate rows and rows missing an order date or delivery time. Placeholder coordinates (values near zero) yield a missing distance. 
 
-We save the cleaned data to `data/processed/food_delivery_clean.csv`.
+We save the cleaned data to `data/processed/` folder in `train.csv` and `test.csv`.
 
 
 ```{python}
