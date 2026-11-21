@@ -395,6 +395,31 @@ hour_plot
 
 Figure 5 shows the median delivery times varying considerably depending on the hour the delivery was ordered. The longest median delivery time occur during the evening hours, especially between 19:00 and 21:00 which peaks at 20:00 with a delivery time of 31 minutes. The sharpest increase also happens from the hours 11:00 to 14:00, when the median delivery times range from 27-28 minutes. These periods may very well concincide with the typical dinner and lunch hours which suggests that there's increased demand of food delivery and may contribute to longer delivery times. In contrast, the orders placed between 8:00 and 10:00 have a median delivery time of 19 minutes. The noticeable differences across hours suggest that the timing of the order could be an important predictor of delivery time. 
 
+```{python}
+#| label: fig-order-type
+#| fig-cap: "Median delivery time by order type in the training dataset."
+
+# Calculate median delivery time and order count by order type
+order_summary = train_clean.groupby("Type_of_order")["target"].agg(["median", "count"]).reset_index()
+
+
+# Plot median delivery time by order type
+order_plot = alt.Chart(order_summary).mark_bar().encode(
+    x=alt.X("Type_of_order:N", sort=alt.SortField(field="median", order="descending"), title="Order type", axis=alt.Axis(labelAngle=0)),
+    y=alt.Y("median:Q", title="Median delivery time (minutes)"),
+    tooltip=[
+        alt.Tooltip("Type_of_order:N", title="Order type"),
+        alt.Tooltip("median:Q", title="Median delivery time", format=".1f"),
+        alt.Tooltip("count:Q", title="Number of orders")
+    ]
+).properties(width=650, height=350, title="Delivery Time by Order Type")
+
+
+order_plot
+```
+
+Figure 6 shows the median delivery times across different order types, but they're relatively consistent. The median delivery times of buffets and meals are 26 minutes which is not that much different from the median delivery times of drinks and snacks which are 25 minutes. The very small difference of 1 minute seems to suggest that order type may have a weaker association with delivery time compared to other external factors such as traffic density and weather conditions which we have seen to show larger differences in median delivery times. 
+
 ## Models
 
 We predict delivery time in minutes from information that is known when an order is dispatched: courier age, rating and vehicle, the number of deliveries the courier is carrying, straight-line distance, order hour, day of the week, weather, traffic, order type, festival and area type. We first remove the orders with impossible courier details (age 15 or 50, or a rating of 1 or 6).
