@@ -3,7 +3,7 @@
 
 services:
   analysis-env:
-    image: <steven_ussername>/dsci-522-group-18-predicting-food-delivery-time:sha-457a1eb
+    image: <stevenm19>/dsci-522-group-18-predicting-food-delivery-time:sha-457a1eb
     ports:
       # 2222 on your computer, 22 in the container.
       # "127.0.0.1:2222:22" stops others on the same Wi-Fi from reaching it.
