@@ -49,7 +49,21 @@ Full license terms can be viewed [here](LICENSE.md).
 
 ## AI use statement
 
-Code is written by a human team member with AI assistance during debugging. Ultimately, all decisions regarding what code to use were also made by a human team member. Claude was used to correct grammar during writing.
+Code is written by a human team member with AI assistance during debugging. Ultimately, all decisions regarding what code to use were also made by a human team member. Claude was used to correct grammar during writing. No AI instruction files were used. Example prompts are as follows:
+
+Grammar:
+> Given the following sentence, are there any errors in grammar? Identify where but make no changes to the writing. "sentence"
+
+Debugging:
+> Why is this code giving a "[error message]" error? "code"
+
+@shravnchandr: I used Claude Code (Opus 5.5) to assist with implementing and integrating the data downloading, cleaning, and splitting code into Quarto, cross-checking outputs against project requirements, and debugging errors.
+
+Example prompts *(no instruction file like `CLAUDE.md` was used)*:
+
+> Why does the report fail to render on Windows? Make no code changes.
+
+> Cross-check the numbers and metrics in the Quarto report against the script outputs.
 
 ## Rendered report
 
