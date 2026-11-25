@@ -57,6 +57,13 @@ Grammar:
 Debugging:
 > Why is this code giving a "[error message]" error? "code"
 
+@shravnchandr: I used Claude Code (Opus 5.5) to assist with implementing and integrating the data downloading, cleaning, and splitting code into Quarto, cross-checking outputs against project requirements, and debugging errors.
+
+Example prompts *(no instruction file like `CLAUDE.md` was used)*:
+
+> Why does the report fail to render on Windows? Make no code changes.
+
+> Cross-check the numbers and metrics in the Quarto report against the script outputs.
 
 ## Rendered report
 
