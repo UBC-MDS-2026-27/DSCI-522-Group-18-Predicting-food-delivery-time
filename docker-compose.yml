@@ -1,0 +1,15 @@
+# Adapted from docker-uv-renv by Daniel Chen (MIT License)
+# https://github.com/chendaniely/docker-uv-renv
+
+services:
+  analysis-env:
+    image: stevenm19/dsci-522-group-18-predicting-food-delivery-time:sha-457a1eb
+    ports:
+      # 2222 on your computer, 22 in the container.
+      # "127.0.0.1:2222:22" stops others on the same Wi-Fi from reaching it.
+      - "2222:22"
+    volumes:
+      - .:/workspace
+      # ro: read-only
+      - ~/.ssh/id_ed25519.pub:/root/.ssh/authorized_keys:ro
+      - ~/.gitconfig:/root/.gitconfig:ro
