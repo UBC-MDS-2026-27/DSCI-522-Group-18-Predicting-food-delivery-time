@@ -8,25 +8,44 @@ In this project, we examine whether food delivery time can be predicted from ord
 
 ## How to run the analysis
 
-1. Clone this repository and open a terminal in its root folder.
-2. Install the Python environment:
+### Clone the repository
 
+Install [Git](https://git-scm.com/install). On the project’s GitHub page, select **Code**, choose **HTTPS**, and copy the repository URL. Open a command-line shell (PowerShell on Windows, Terminal on macOS, or your usual shell on Linux). From the folder where you want to keep the project, paste the URL after `git clone` and then enter the new project folder.
+
+```sh
+git clone https://github.com/UBC-MDS-2026-27/DSCI-522-Group-18-Predicting-food-delivery-time.git
+cd DSCI-522-Group-18-Predicting-food-delivery-time
+```
+
+Run the remaining commands from that folder.
+
+### Run with Docker Compose
+
+Install and start [Docker Desktop](https://www.docker.com/products/docker-desktop/), which includes Docker Compose. The project image supplies Quarto, uv, and the Python environment from [`uv.lock`](uv.lock).
+
+1. Check that `~/.ssh/id_ed25519.pub` is a file. If you need a key, run the following command and press Enter at each prompt to accept the defaults. Docker mounts this public key. If you run the container before creating the key, Docker can create a directory at that path. Remove the empty directory before generating the key.
+
+   ```sh
+   ssh-keygen -t ed25519
    ```
-   uv sync
+
+   Compose also mounts `~/.gitconfig`. If the file is missing, create an empty file at that path before starting the container. On Windows, `~` here means your user profile folder.
+
+2. Download the project image from Docker Hub. Docker Compose reads the image tag from `docker-compose.yml`.
+
+   ```sh
+   docker compose pull
    ```
 
-3. Render the report:
+3. Run the analysis and render the report.
 
+   ```sh
+   docker compose run --rm analysis-env uv run quarto render
    ```
-   uv run quarto render analysis/food-delivery-time-regression.qmd
-   ```
 
-This runs the whole analysis and writes `analysis/food-delivery-time-regression.html`. The report downloads the Food Delivery Dataset from Kaggle into `data/raw/train.csv` and `data/raw/test.csv` with Kaggle's official `kagglehub` package; the dataset is public, so no Kaggle account or API token is needed. It then writes the cleaned data and the training and test sets to `data/processed/`. The same commands work on Windows, macOS and Linux.
+   Docker removes the one-off container when the command exits. The rendered HTML stays in your project folder.
 
-## Dependencies
-
-- [uv](https://docs.astral.sh/uv/getting-started/installation/), which installs the Python packages listed in `pyproject.toml`
-- [Quarto](https://quarto.org/docs/get-started/), to render the report
+Rendering writes `analysis/food-delivery-time-regression.html`. It requires internet access to retrieve the public Food Delivery Dataset using `kagglehub`. The source CSVs go to `data/raw/` and the cleaned training and test CSVs go to `data/processed/`. You can download the dataset without a Kaggle account or API token.
 
 ## Contributing and community guidelines
 
@@ -37,7 +56,7 @@ This runs the whole analysis and writes `analysis/food-delivery-time-regression.
 
 - Report and other non-code materials: CC BY-NC-ND 4.0
 - Code: MIT
-- [Food Delivery Dataset](https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset) (Gaurav Malik): Kaggle lists the license as "Other (specified in description)", but the description does not state any terms. We use it only for non-commercial, educational purposes; rendering the report (step 3 above) downloads it from Kaggle.
+- [Food Delivery Dataset](https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset) (Gaurav Malik): Kaggle lists the license as "Other (specified in description)", but the description does not state any terms. We use it only for non-commercial, educational purposes. Rendering the report downloads it from Kaggle.
 
 Full license terms can be viewed [here](LICENSE.md).
 
@@ -67,4 +86,4 @@ Example prompts *(no instruction file like `CLAUDE.md` was used)*:
 
 ## Rendered report
 
-View the full report [here](https://ubc-mds-2026-27.github.io/DSCI-522-Group-18-Predicting-food-delivery-time/analysis/food-delivery-time-regression.html).
+[Read the published report on GitHub Pages](https://ubc-mds-2026-27.github.io/DSCI-522-Group-18-Predicting-food-delivery-time/analysis/food-delivery-time-regression.html). After the Milestone 2 deployment switches Pages to `main` and `/docs`, the report will be at the [project site root](https://ubc-mds-2026-27.github.io/DSCI-522-Group-18-Predicting-food-delivery-time/).
