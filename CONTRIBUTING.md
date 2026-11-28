@@ -125,11 +125,11 @@ so a file you change there changes on your computer too.
   Run `ssh-keygen -R "[localhost]:2222"`, then connect again.
 * **GitHub asks you to sign in when you push from the container:**
   sign in once in the browser window Positron opens. Positron remembers it.
-* **Linux laptops:** ssh refuses the key because the file belongs to you, not `root`.
-  Remove the `#` from the `StrictModes no` line in the `Dockerfile` and push,
-  so the workflow publishes a fixed image.
-* **Windows laptops:** ssh refuses the key because Docker Desktop shares the file
-  so that anyone can write to it. The same `StrictModes no` line in the `Dockerfile` fixes this.
+* **ssh refuses the key on Linux or Windows:** the key file in the container belongs to you, not `root`
+  (Linux), or anyone can write to it (Windows), and ssh rejects it.
+  The image already has `StrictModes no` set in the `Dockerfile` to allow this.
+  If it still happens, get the newest image and recreate the container:
+  `git pull`, `docker compose pull`, then `docker compose down` and `docker compose up -d`.
 * **Port 2222 is already in use:** change the first `2222` in `docker-compose.yml`
   to another number (e.g. `2223`), and connect to that port instead.
 
