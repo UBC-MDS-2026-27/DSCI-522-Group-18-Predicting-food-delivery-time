@@ -86,4 +86,4 @@ Example prompts *(no instruction file like `CLAUDE.md` was used)*:
 
 ## Rendered report
 
-[Read the published report on GitHub Pages](https://ubc-mds-2026-27.github.io/DSCI-522-Group-18-Predicting-food-delivery-time/analysis/food-delivery-time-regression.html). After the Milestone 2 deployment switches Pages to `main` and `/docs`, the report will be at the [project site root](https://ubc-mds-2026-27.github.io/DSCI-522-Group-18-Predicting-food-delivery-time/).
+[Read the published report on GitHub Pages](https://ubc-mds-2026-27.github.io/DSCI-522-Group-18-Predicting-food-delivery-time/).
